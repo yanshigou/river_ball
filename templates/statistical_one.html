@@ -1,0 +1,154 @@
+{% extends 'blank.html' %}
+{% load staticfiles %}
+{% block title %}
+    违停统计
+{% endblock %}
+{% block topbar_title %}
+    违停统计
+{% endblock %}
+{% block other_css %}
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+{% endblock %}
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'echarts/dist/echarts.js' %}"></script>
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+        <form action="" method="post" id="filterDataForm">
+            <p>
+                日期选项：
+                <input type="text" class="" id="date_time0" name="start_time"
+                       value="{{ start_time }}">
+                &nbsp;至 &nbsp;
+                <input type="text" class="" id="date_time1" name="end_time"
+                       value="{{ end_time }}">
+            </p>
+
+            <p id="all_button">
+                <a>
+                    <button type="submit" class="btn btn-primary">筛选统计</button>
+                </a>
+                <a href="">
+                    <button type="button" class="btn btn-primary">重置</button>
+                </a>
+
+            </p>
+
+            <p></p>
+            {% csrf_token %}
+        </form>
+        <div id="main" style="width: auto;height: 600px;"></div>
+    </div>
+
+{% endblock %}
+
+{% block other_js %}
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
+    <script type="text/javascript">
+        $(function () {
+            // 基于准备好的dom，初始化echarts实例
+            var myChart = echarts.init(document.getElementById('main'));
+
+            // 指定图表的配置项和数据
+            {#console.log({{ all_address|safe }});#}
+            {#console.log({{ all_address_count|safe }});#}
+            var option = {
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            dataView: {//数据视图工具，可以展现当前图表所用的数据，编辑后可以动态更新。
+                                show: true,//是否显示组件。
+                                readOnly: false
+                            },
+                            magicType: {//动态类型切换 示例：feature: { magicType: {type: ['line', 'bar', 'stack', 'tiled']}}
+                                show: true,
+                                type: ['line', 'bar']
+                            },
+                            restore: {//配置项还原。
+                                show: true
+                            },
+                            saveAsImage: {
+                                show: true,
+                                excludeComponents:
+                                    ['toolbox'],
+                                title:
+                                    "导出",
+                                pixelRatio:
+                                    2
+                            }
+                        }
+                    },
+                    color: ['#3398DB'],
+                    title:
+                        {
+                            text: '流速球图形统计'
+                        }
+                    ,
+                    tooltip: {}
+                    ,
+                    legend: {
+                        data: ['流速球']
+                    }
+                    ,
+                    grid: {
+                        left: '10%',
+                        bottom: '25%',
+                        right: '1%'
+                        {#containLabel: true#}
+                    }
+                    ,
+                    xAxis: {
+                        type: 'category',
+                        data: {{ time_list|safe }},
+                        axisLabel: {
+                            interval: 0,
+                            rotate:
+                                40
+                        }
+                        ,
+                        axisTick: {
+                            alignWithLabel: true
+                        }
+                    }
+                    ,
+                    yAxis: {}
+                    ,
+
+                    series: [
+                        {
+                            name: '流速球',
+                            type: 'line',
+                            data: {{ speed_list|safe }}
+                        }
+                    ]
+                }
+            ;
+            // 使用刚指定的配置项和数据显示图表。
+            myChart.setOption(option);
+            {#myChart.showLoading();#}
+
+        })
+    </script>
+
+    <script>
+        //执行一个laydate实例
+        laydate.render({
+            elem: '#date_time0',
+            type: 'datetime'
+        });
+        laydate.render({
+            elem: '#date_time1',
+            type: 'datetime'
+        });
+    </script>
+{% endblock %}

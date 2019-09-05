@@ -1,0 +1,146 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    流速球数据信息
+{% endblock %}
+{% block topbar_title %}
+    流速球数据信息
+{% endblock %}
+{% block other_css %}
+    <!-- Custom styles for this page -->
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+
+        <!-- Page Heading -->
+        <form action="" method="post" id="filterDataForm">
+            <p>
+                日期选项：
+                <input type="text" class="" id="date_time0" name="start_time"
+                       value="{{ start_time }}">
+                &nbsp;至 &nbsp;
+                <input type="text" class="" id="date_time1" name="end_time"
+                       value="{{ end_time }}">
+            </p>
+            <p id="all_button">
+                <a>
+                    <button type="submit" class="btn btn-primary">筛选查询</button>
+                </a>
+                <a href="">
+                    <button type="button" class="btn btn-primary">重置</button>
+                </a>
+                <a>
+                    <button type="button" id="exportExcel" class="btn btn-info">导出Excel表</button>
+                </a>
+            </p>
+
+            <p></p>
+            {% csrf_token %}
+        </form>
+        <!-- DataTales Example -->
+        <div class="card shadow mb-4">
+            <div class="alert"></div>
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">违章停车</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th>设备IMEI号</th>
+                            <th>采集时间</th>
+                            <th>上传时间</th>
+                            <th>收到时间</th>
+                            <th>经纬度</th>
+                            <th>海拔/米</th>
+                            <th>速度公里/小时</th>
+                            <th>方向</th>
+                            <th>测量精度</th>
+                            <th>剩余电量</th>
+                            <th>搜星数量</th>
+                            <th>实际使用卫星数量</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th>设备IMEI号</th>
+                            <th>采集时间</th>
+                            <th>上传时间</th>
+                            <th>收到时间</th>
+                            <th>经纬度</th>
+                            <th>海拔/米</th>
+                            <th>速度公里/小时</th>
+                            <th>方向</th>
+                            <th>测量精度</th>
+                            <th>剩余电量</th>
+                            <th>搜星数量</th>
+                            <th>实际使用卫星数量</th>
+                        </tr>
+                        </tfoot>
+                        <tbody id="t_body">
+                        {% for data in location_data %}
+                            <tr>
+                                <td>{{ data.imei.imei }}</td>
+                                <td>{{ data.time }}</td>
+                                <td>{{ data.up_time }}</td>
+                                <td>{{ data.get_time }}</td>
+                                <td>{{ data.longitude }},{{ data.latitude }}</td>
+                                <td>{{ data.altitude }}</td>
+                                <td>{{ data.speed }}</td>
+                                <td>{{ data.direction }}</td>
+                                <td>{{ data.accuracy }}</td>
+                                <td>{{ data.power }}</td>
+                                <td>{{ data.satellites }}</td>
+                                <td>{{ data.real_satellites }}</td>
+                            </tr>
+                        {% endfor %}
+
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
+    <script>
+        //执行一个laydate实例
+        laydate.render({
+            elem: '#date_time0',
+            type: 'datetime'
+        });
+        laydate.render({
+            elem: '#date_time1',
+            type: 'datetime'
+        });
+    </script>
+{% endblock %}

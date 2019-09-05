@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <title>地图显示</title>
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<!-- 加载地图JSAPI脚本 -->
+<script src="https://webapi.amap.com/maps?v=1.4.13&key=f3ac32ab9a954dc8682206cd3bf90728"></script>
+<script src="//webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
+
+<script>
+    var map = new AMap.Map('container', {
+        resizeEnable: false, //是否监控地图容器尺寸变化
+        zoom: 15, //初始化地图层级
+        center: [106.509920533, 29.5143553667] //初始化地图中心点
+    });
+    AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'],
+function(PointSimplifier, $) {
+
+        if (!PointSimplifier.supportCanvas) {
+            alert('当前环境不支持 Canvas！');
+            return;
+        }
+
+        var pointSimplifierIns = new PointSimplifier({
+            map: map, //所属的地图实例
+
+            getPosition: function(item) {
+
+                if (!item) {
+                    return null;
+                }
+
+                var parts = item.split(',');
+
+                //返回经纬度
+                return [parseFloat(parts[0]), parseFloat(parts[1])];
+            },
+            getHoverTitle: function(dataItem, idx) {
+                return idx + ': ' + dataItem;
+            },
+            renderOptions: {
+                //点的样式
+                pointStyle: {
+                    fillStyle: 'red',
+                    width: 15,
+                    height: 24,
+                    offset: ['-50%', '-100%'],
+                    lineWidth: 1,
+                    strokeStyle: 'gray',
+                    content: function(ctx, x, y, width, height) {
+
+                        //注意，这里的width和height可能不同于pointStyle里面的width/height， 高清屏幕下会存在比例缩放
+
+                        //这里绘制一个圆顶锥形
+
+                        var yPos = 1 / 3;
+
+                        var top = [x + width / 2, y],
+                            right = [x + width, y + height * yPos],
+                            bottom = [x + width / 2, y + height],
+                            left = [x, y + height * yPos];
+
+                        ctx.moveTo(left[0], left[1]);
+                        ctx.arcTo(top[0], top[1], right[0], right[1], width / 3);
+                        ctx.lineTo(right[0], right[1]);
+                        ctx.lineTo(bottom[0], bottom[1]);
+                        ctx.lineTo(left[0], left[1]);
+
+                    },
+                },
+                //鼠标hover时的title信息
+                hoverTitleStyle: {
+                    position: 'top'
+                }
+            }
+        });
+
+        window.pointSimplifierIns = pointSimplifierIns;
+
+        $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+        $.get('/media/all_devices_info.txt', function(csv) {
+
+        {#$.get('{% url "point" %}', function(csv) {#}
+
+            var data = csv.split('\n');
+            console.log(data);
+            pointSimplifierIns.setData(data);
+
+            $('#loadingTip').remove();
+        });
+
+        pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function(e, record) {
+            //console.log(e.type, record);
+        });
+    });
+
+</script>
+</body>
+</html>

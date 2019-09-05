@@ -1,0 +1,293 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    设备管理
+{% endblock %}
+{% block topbar_title %}
+    设备管理
+{% endblock %}
+{% block other_css %}
+    <!-- Custom styles for this page -->
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+
+        <!-- Page Heading -->
+            <p id="all_button">
+
+                <a href="{% url 'show_map' %}" target="view_window">
+                    <button type="button" class="btn btn-success">地图查看</button>
+                </a>
+
+                <a>
+                    <button type="button" id="deviceInfoExport" class="btn btn-info">导出设备信息</button>
+                </a>
+
+
+                {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
+                <a href="{% url 'device_add' %}">
+                    <button type="button" class="btn btn-success" style="float:right;">新增设备</button>
+                </a>
+                {% endif %}
+            </p>
+
+
+        <!-- DataTales Example -->
+        <div class="card shadow mb-4">
+            <div class="alert"></div>
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">设备详情</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th>设备IMEI号</th>
+                            <th>描述</th>
+                            <th>操作</th>
+                            <th>查看地图</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th>设备IMEI号</th>
+                            <th>描述</th>
+                            <th>操作</th>
+                            <th>查看地图</th>
+                        </tr>
+                        </tfoot>
+                        <tbody id="t_body">
+                        {% for device in all_devices %}
+                            <tr>
+                                <td>{{ device.imei }}</td>
+                                <td>{{ device.desc|default_if_none:"" }}</td>
+                                {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
+                                    <td>
+                                        <a href="{% url 'device_modify' device.id %}">
+                                            <button type="button" class="btn btn-warning" style="line-height: 1">修改
+                                            </button>
+                                        </a>
+                                        <a href="{% url 'device_view' device.id %}">
+                                            <button type="button" class="btn btn-success" style="line-height: 1">查看
+                                            </button>
+                                        </a>
+                                        <button type="button" class="btn btn-danger"
+                                                onclick="return deviceb({{ device.id }})" style="line-height: 1">删除
+                                        </button>
+                                    </td>
+                                {% else %}
+                                    <td>
+                                        权限不足
+                                    </td>
+                                {% endif %}
+
+                                <td>
+                                    {% if device.longitude and device.latitude %}
+                                        <a href="{% url 'show_one_to_map' device.id %}" target="view_window">
+                                            <button type="button" class="btn btn-success" style="line-height: 1">地图查看
+                                            </button>
+                                        </a>
+                                    {% endif %}
+                                </td>
+
+                            </tr>
+                        {% endfor %}
+
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
+
+{#    <script>#}
+{#        $(function () {#}
+{#            var district1 = $('#district');#}
+{#            var area1 = $("#area");#}
+{#            var address1 = $("#address");#}
+{#            district1.change(function () {#}
+{##}
+{#                $.ajax({#}
+{#                    cache: false,#}
+{#                    type: "POST",#}
+{#                    dataType: 'json',#}
+{#                    url: "{% url 'test' %}",#}
+{#                    data: {#}
+{#                        "district": $('#district option:selected').val(),#}
+{#                        "area": $('#area option:selected').val()#}
+{#                    },#}
+{#                    async: true,#}
+{#                    success: function (data) {#}
+{#                        var option = '<option value="' + "全部片区" + '">' + "全部片区" + '</option>';#}
+{#                        for (var i in data.area) {#}
+{#                            if (data.area.hasOwnProperty(i)) {#}
+{#                                var val = data.area[i]['id'];#}
+{#                                var text = data.area[i]['area'];#}
+{#                                console.log(val);#}
+{#                                console.log(text);#}
+{#                                option = option + '<option value="' + val + '">' + text + '</option>';#}
+{#                            }#}
+{#                        }#}
+{#                        area1.html(option);//给select赋值option,增加可用appendTo()方法#}
+{#                        area1.selectpicker("refresh");//必须的,调用此方法以刷新组件#}
+{#                    },#}
+{#                })#}
+{#            });#}
+{#            area1.change(function () {#}
+{##}
+{#                $.ajax({#}
+{#                    cache: false,#}
+{#                    type: "POST",#}
+{#                    dataType: 'json',#}
+{#                    url: "{% url 'test' %}",#}
+{#                    data: {#}
+{#                        "district": $('#district option:selected').val(),#}
+{#                        "area": $('#area option:selected').val()#}
+{#                    },#}
+{#                    async: true,#}
+{#                    success: function (data) {#}
+{#                        console.log(data);#}
+{#                        var option = '<option value="' + "全部地址" + '"selected>' + "全部地址" + '</option>';#}
+{#                        for (var i in data.address) {#}
+{#                            if (data.address.hasOwnProperty(i)) {#}
+{#                                var val = data.address[i]['address'];#}
+{#                                var text = data.address[i]['address'];#}
+{#                                console.log(val);#}
+{#                                console.log(text);#}
+{#                                option = option + '<option value="' + val + '">' + text + '</option>';#}
+{#                            }#}
+{#                        }#}
+{#                        address1.html(option);//给select赋值option,增加可用appendTo()方法#}
+{#                        address1.selectpicker("refresh");//必须的,调用此方法以刷新组件#}
+{#                    },#}
+{#                })#}
+{#            })#}
+{#        })#}
+{#    </script>#}
+    <script>
+        function deviceb(device_id) {
+            var msg = "删除此设备将会无法恢复\n\n您真的确定要删除吗？";
+            if (confirm(msg) === true) {
+                if (device_id === undefined) {
+                    return false
+                }
+                $.ajax({
+                    cache: false,
+                    type: "POST",
+                    dataType: 'json',
+                    url: "{% url 'device_del' %}",
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        "device_id": device_id
+                    },
+                    async: true,
+                    success: function (data) {
+                        if (data.status === 'success') {
+                            alert('删除成功');
+                            location.reload();
+                        } else {
+                            alert(data.msg);
+                            location.reload();
+                        }
+
+                    }
+                });
+                return true;
+            }
+        }
+
+    </script>
+{#    <script>#}
+{#        $(function () {#}
+{#            $('#offlineExport').click(function () {#}
+{#                $('.alert').addClass('alert-success').html('Excel正在导出，请耐心等待').show().delay(1500).fadeOut();#}
+{#                $.ajax({#}
+{#                    cache: false,#}
+{#                    type: "POST",#}
+{#                    dataType: 'json',#}
+{#                    url: "{% url 'device_offline_export' %}",#}
+{#                    data: $('#selectDevicesForm').serialize(),#}
+{#                    async: true,#}
+{#                    success: function (data) {#}
+{#                        if (data.status === 'success') {#}
+{#                            $('.alert').addClass('alert-success').html('数据导出成功，请点击文件名称进行下载').show().delay(1500).fadeOut();#}
+{#                        } else {#}
+{#                            $('.alert').addClass('alert-success').html('数据导出失败，或没有数据导出').show().delay(3000).fadeOut();#}
+{#                        }#}
+{#                        var href = data.media_url;#}
+{#                        var file = data.file;#}
+{#                        if (href === undefined) {#}
+{#                            href = "#";#}
+{#                        }#}
+{#                        if (file === undefined) {#}
+{#                            file = '没有数据导出'#}
+{#                        }#}
+{#                        $("#all_button").append('<button type="button" class="btn btn-success"><a href="' + href + '">' + file + '</a></button>&nbsp;');#}
+{##}
+{#                    }#}
+{#                });#}
+{#            });#}
+{#            $('#deviceInfoExport').click(function () {#}
+{#                $('.alert').addClass('alert-success').html('Excel正在导出，请耐心等待').show().delay(1500).fadeOut();#}
+{#                $.ajax({#}
+{#                    cache: false,#}
+{#                    type: "POST",#}
+{#                    dataType: 'json',#}
+{#                    url: "{% url 'device_info_export' %}",#}
+{#                    data: $('#selectDevicesForm').serialize(),#}
+{#                    async: true,#}
+{#                    success: function (data) {#}
+{#                        if (data.status === 'success') {#}
+{#                            $('.alert').addClass('alert-success').html('数据导出成功，请点击文件名称进行下载').show().delay(1500).fadeOut();#}
+{#                        } else {#}
+{#                            $('.alert').addClass('alert-success').html('数据导出失败，或没有数据导出').show().delay(3000).fadeOut();#}
+{#                        }#}
+{#                        var href = data.media_url;#}
+{#                        var file = data.file;#}
+{#                        if (href === undefined) {#}
+{#                            href = "#";#}
+{#                        }#}
+{#                        if (file === undefined) {#}
+{#                            file = '没有数据导出'#}
+{#                        }#}
+{#                        $("#all_button").append('<button type="button" class="btn btn-success"><a href="' + href + '">' + file + '</a></button>&nbsp;');#}
+{##}
+{#                    }#}
+{#                });#}
+{#            });#}
+{#        })#}
+{#    </script>#}
+
+{% endblock %}
