@@ -7,7 +7,7 @@ class LocationInfo(models.Model):
     imei = models.ForeignKey(DevicesInfo, verbose_name='设备号')
     time = models.DateTimeField(verbose_name='采集时间')
     up_time = models.DateTimeField(verbose_name='上传时间')
-    get_time = models.DateTimeField(verbose_name='收到时间')
+    get_time = models.DateTimeField(verbose_name='收到时间', auto_now_add=True)
     longitude = models.CharField(max_length=10, verbose_name='经度')
     latitude = models.CharField(max_length=10, verbose_name='纬度')
     altitude = models.CharField(max_length=10, verbose_name='海拔米')
@@ -21,3 +21,9 @@ class LocationInfo(models.Model):
     class Meta:
         verbose_name = "原始数据信息表"
         verbose_name_plural = verbose_name
+
+
+class TXT(models.Model):
+    info = models.CharField(max_length=30, verbose_name='备注', default='')
+    filename = models.FileField(upload_to='txt', verbose_name='文件名')
+    starttime = models.DateTimeField(null=True, blank=True, verbose_name='上传时间')
