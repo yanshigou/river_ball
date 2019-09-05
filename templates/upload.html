@@ -1,0 +1,47 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    上传轨迹文件
+{% endblock %}
+{% block topbar_title %}
+    上传轨迹文件
+{% endblock %}
+
+{% block other_css %}
+    <link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+
+        <form method="post" enctype="multipart/form-data" action="">
+            <p>
+                {{ form.as_p }}
+            </p>
+            <p>
+                <input type="submit" value="确认上传">
+            </p>
+            {% csrf_token %}
+        </form>
+
+    </div>
+{% endblock %}
+
+{% block other_js %}
+    <script src="{% static 'js/jquery-editable-select.js' %}"></script>
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script>
+        $('#basic').editableSelect(
+            {filter: false}
+        );
+    </script>
+{% endblock %}

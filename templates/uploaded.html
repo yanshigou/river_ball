@@ -1,0 +1,128 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    已上传轨迹文件
+{% endblock %}
+{% block topbar_title %}
+    已上传轨迹文件
+{% endblock %}
+{% block other_css %}
+    <!-- Custom styles for this page -->
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+
+        <!-- Page Heading -->
+        <!-- DataTales Example -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">轨迹文件</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                        <tr>
+                            <th>文件名</th>
+                            <th>备注</th>
+                            <th>上传时间</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        <tr>
+                            <th>文件名</th>
+                            <th>备注</th>
+                            <th>上传时间</th>
+                            <th>操作</th>
+                        </tr>
+                        </tfoot>
+                        <tbody id="t_body">
+                        {% for txt in all_txt %}
+                            <tr>
+                                <td>{{ txt.filename }}</td>
+                                <td>{{ txt.info }}</td>
+                                <td>{{ txt.starttime|date:"Y-m-d H:i:s" }}</td>
+                                <td>
+                                    <a href="{% url 'show_txt' txt.id %}" target="view_window">
+                                    <button type="button" class="btn btn-success" style="line-height: 1">轨迹回放</button>
+                                    </a>
+                                    &nbsp;
+                                    <button type="button" class="btn btn-danger"
+                                                onclick="return deviceb({{ txt.id }})" style="line-height: 1">删除
+                                        </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
+
+    <script>
+        function deviceb(txt_id) {
+            var msg = "删除此设备将会无法恢复\n\n您真的确定要删除吗？";
+            if (confirm(msg) === true) {
+                if (txt_id === undefined) {
+                    return false
+                }
+                $.ajax({
+                    cache: false,
+                    type: "POST",
+                    dataType: 'json',
+                    url: "{% url 'delFile' %}",
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        "file_id": txt_id
+                    },
+                    async: true,
+                    success: function (data) {
+                        if (data.status === 'success') {
+                            alert('删除成功');
+                            location.reload();
+                        } else {
+                            alert(data.msg);
+                            location.reload();
+                        }
+
+                    }
+                });
+                return true;
+            }
+        }
+
+    </script>
+{% endblock %}
