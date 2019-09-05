@@ -57,30 +57,49 @@
         </div>
 
         <!-- Nav Item - Pages Collapse Menu -->
-        <li {% if 'dataInfo/' in request.path %}class="nav-item active table-active"
+        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/locationInfo' in request.path or 'dataInfo/statistical' in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#wt"
-               aria-expanded="true" aria-controls="wt">
-                <i class="fas fa-fw fa-ban"></i>
+            <a class="nav-link" href="{% url 'select_device' %}">
+                <i class="fas fa-fw fa-info"></i>
                 <span>流速球监控</span>
             </a>
-            <div id="wt" {% if 'dataInfo/' in request.path %}class="collapse show" {% else %}class="collapse"{% endif %}
-                 aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
-                    <h6 class="collapse-header">流速球：</h6>
-                    <a {% if 'dataInfo/locationInfo' in request.path or 'dataInfo/selectDevice' in request.path %}
-                        class="collapse-item active table-active"
-                        {% else %}class="collapse-item"{% endif %}
-                        href="{% url 'select_device' %}">数据查看</a>
-                    <a {% if 'dataInfo/wtAddressStatistical/' in request.path %}
-                        class="collapse-item active table-active" {% else %}class="collapse-item"{% endif %}
-                        href="">轨迹查看</a>
-                    <a {% if 'dataInfo/wtAddressStatisticalText' in request.path %}
-                        class="collapse-item active table-active" {% else %}class="collapse-item"{% endif %}
-                        href="">数据统计</a>
-
-                </div>
-            </div>
+        </li>
+        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"
+            {% else %}class="nav-item"{% endif %}>
+            <a class="nav-link" href="{% url 'uploadTXT' %}">
+                <i class="fas fa-fw fa-file"></i>
+                <span>上传轨迹文件</span>
+            </a>
+        </li>
+        <li {% if 'dataInfo/uploadedFile' in request.path %}class="nav-item active table-active"
+            {% else %}class="nav-item"{% endif %}>
+            <a class="nav-link" href="{% url 'uploaded' %}">
+                <i class="fas fa-fw fa-map"></i>
+                <span>文件轨迹回放</span>
+            </a>
+        </li>
+        {#            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#wt"#}
+        {#               aria-expanded="true" aria-controls="wt">#}
+        {#                <i class="fas fa-fw fa-ban"></i>#}
+        {#                <span>流速球监控</span>#}
+        {#            </a>#}
+        {#            <div id="wt" {% if 'dataInfo/' in request.path %}class="collapse show" {% else %}class="collapse"{% endif %}#}
+        {#                 aria-labelledby="headingTwo" data-parent="#accordionSidebar">#}
+        {#                <div class="bg-white py-2 collapse-inner rounded">#}
+        {#                    <h6 class="collapse-header">流速球：</h6>#}
+        {#                    <a {% if 'dataInfo/locationInfo' in request.path or 'dataInfo/selectDevice' in request.path %}#}
+        {#                        class="collapse-item active table-active"#}
+        {#                        {% else %}class="collapse-item"{% endif %}#}
+        {#                        href="{% url 'select_device' %}">数据查看</a>#}
+        {#                    <a {% if 'dataInfo/wtAddressStatistical/' in request.path %}#}
+        {#                        class="collapse-item active table-active" {% else %}class="collapse-item"{% endif %}#}
+        {#                        href="{% url 'select_device' %}">轨迹查看</a>#}
+        {#                    <a {% if 'dataInfo/wtAddressStatisticalText' in request.path %}#}
+        {#                        class="collapse-item active table-active" {% else %}class="collapse-item"{% endif %}#}
+        {#                        href="{% url 'select_device' %}">数据统计</a>#}
+        {##}
+        {#                </div>#}
+        {#            </div>#}
         </li>
 
 
@@ -98,8 +117,13 @@
         <li {% if 'devices/info' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'devices_info' %}">
-                <i class="fas fa-fw fa-video"></i>
+                <i class="fas fa-fw fa-baseball-ball"></i>
                 <span>设备管理</span></a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'show_map' %}" target="view_window">
+                <i class="fas fa-fw fa-map-marker"></i>
+                <span>地图展示</span></a>
         </li>
 
         {#        {% if request.user.permission == "superadmin" or request.user.permission == "admin"%}#}
