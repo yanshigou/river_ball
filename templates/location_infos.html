@@ -45,8 +45,11 @@
                 <a href="">
                     <button type="button" class="btn btn-primary">重置</button>
                 </a>
-                <a>
-                    <button type="button" id="exportExcel" class="btn btn-info">导出Excel表</button>
+{#                <a>#}
+{#                    <button type="button" id="exportExcel" class="btn btn-info">导出Excel表</button>#}
+{#                </a>#}
+                <a href="{% url 'track' imei_id start_time end_time %}" target="view_window">
+                    <button type="button" class="btn btn-success">轨迹回放</button>
                 </a>
             </p>
 
