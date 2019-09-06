@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
-from myutils.utils import create_history_record, bd09_to_gcj02
+from myutils.utils import create_history_record, gps_conversion
 from .models import DevicesInfo
 from data_info.models import LocationInfo
 from .forms import DevicesInfoForm
@@ -124,7 +124,8 @@ class ShowMapView(View):
             #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
             #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
             #         f.write(a)
-            a = longitude + ',' + latitude + ',' + imei + ',' + imei_id + '\n'
+            longitude, latitude = gps_conversion(longitude, latitude)
+            a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + imei_id + '\n'
             f.write(a)
         f.close()
         return render(request, "map.html", {})
