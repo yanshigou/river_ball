@@ -40,7 +40,7 @@
             </p>
             <p id="all_button">
                 <a>
-                    <button type="submit" class="btn btn-primary">筛选查询</button>
+                    <button type="submit" class="btn btn-primary">查询</button>
                 </a>
                 <a href="">
                     <button type="button" class="btn btn-primary">重置</button>
@@ -58,9 +58,9 @@
         </form>
         <!-- DataTales Example -->
         <div class="card shadow mb-4">
-            <div class="alert"></div>
+{#            <div class="alert"></div>#}
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">违章停车</h6>
+                <h6 class="m-0 font-weight-bold text-primary"></h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -69,11 +69,9 @@
                         <tr>
                             <th>设备IMEI号</th>
                             <th>采集时间</th>
-                            <th>上传时间</th>
-                            <th>收到时间</th>
                             <th>经纬度</th>
-                            <th>海拔/米</th>
-                            <th>速度公里/小时</th>
+                            <th>海拔 /米</th>
+                            <th>速度 m/s</th>
                             <th>方向</th>
                             <th>测量精度</th>
                             <th>剩余电量</th>
@@ -85,11 +83,9 @@
                         <tr>
                             <th>设备IMEI号</th>
                             <th>采集时间</th>
-                            <th>上传时间</th>
-                            <th>收到时间</th>
                             <th>经纬度</th>
-                            <th>海拔/米</th>
-                            <th>速度公里/小时</th>
+                            <th>海拔 /米</th>
+                            <th>速度 m/s</th>
                             <th>方向</th>
                             <th>测量精度</th>
                             <th>剩余电量</th>
@@ -100,10 +96,8 @@
                         <tbody id="t_body">
                         {% for data in location_data %}
                             <tr>
-                                <td>{{ data.imei.imei }}</td>
+                                <td>{{ imei }}</td>
                                 <td>{{ data.time }}</td>
-                                <td>{{ data.up_time }}</td>
-                                <td>{{ data.get_time }}</td>
                                 <td>{{ data.longitude }},{{ data.latitude }}</td>
                                 <td>{{ data.altitude }}</td>
                                 <td>{{ data.speed }}</td>

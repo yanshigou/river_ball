@@ -29,11 +29,11 @@
     <div class="container-fluid">
 
         <!-- Page Heading -->
-            <p id="all_button">
+            <p id="all_button" style="text-align:right;">
 
-                <a href="{% url 'show_map' %}" target="view_window">
-                    <button type="button" class="btn btn-success">地图查看</button>
-                </a>
+{#                <a href="{% url 'show_map' %}" target="view_window">#}
+{#                    <button type="button" class="btn btn-success">地图查看</button>#}
+{#                </a>#}
 
 {#                <a>#}
 {#                    <button type="button" id="deviceInfoExport" class="btn btn-info">导出设备信息</button>#}
@@ -42,7 +42,7 @@
 
                 {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
                 <a href="{% url 'device_add' %}">
-                    <button type="button" class="btn btn-success" style="float:right;">新增设备</button>
+                    <button type="button" class="btn btn-success" >新增设备</button>
                 </a>
                 {% endif %}
             </p>
@@ -50,7 +50,7 @@
 
         <!-- DataTales Example -->
         <div class="card shadow mb-4">
-            <div class="alert"></div>
+{#            <div class="alert"></div>#}
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">设备详情</h6>
             </div>

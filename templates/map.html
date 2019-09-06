@@ -1,3 +1,4 @@
+{% load staticfiles %}
 <!doctype html>
 <html>
 <head>
@@ -5,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
     <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.ico' %}">
     <title>地图显示</title>
     <style>
         html,
@@ -24,7 +26,7 @@
 <script>
     var map = new AMap.Map('container', {
         resizeEnable: true, //是否监控地图容器尺寸变化
-        zoom: 10, //初始化地图层级
+        zoom: 12, //初始化地图层级
         center: [106.509920533, 29.5143553667] //初始化地图中心点
     });
     AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'],

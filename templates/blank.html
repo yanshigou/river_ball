@@ -64,20 +64,20 @@
                 <span>流速球监控</span>
             </a>
         </li>
-        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"
-            {% else %}class="nav-item"{% endif %}>
-            <a class="nav-link" href="{% url 'uploadTXT' %}">
-                <i class="fas fa-fw fa-file"></i>
-                <span>上传轨迹文件</span>
-            </a>
-        </li>
-        <li {% if 'dataInfo/uploadedFile' in request.path %}class="nav-item active table-active"
-            {% else %}class="nav-item"{% endif %}>
-            <a class="nav-link" href="{% url 'uploaded' %}">
-                <i class="fas fa-fw fa-map"></i>
-                <span>文件轨迹回放</span>
-            </a>
-        </li>
+{#        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"#}
+{#            {% else %}class="nav-item"{% endif %}>#}
+{#            <a class="nav-link" href="{% url 'uploadTXT' %}">#}
+{#                <i class="fas fa-fw fa-file"></i>#}
+{#                <span>上传轨迹文件</span>#}
+{#            </a>#}
+{#        </li>#}
+{#        <li {% if 'dataInfo/uploadedFile' in request.path %}class="nav-item active table-active"#}
+{#            {% else %}class="nav-item"{% endif %}>#}
+{#            <a class="nav-link" href="{% url 'uploaded' %}">#}
+{#                <i class="fas fa-fw fa-map"></i>#}
+{#                <span>文件轨迹回放</span>#}
+{#            </a>#}
+{#        </li>#}
         {#            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#wt"#}
         {#               aria-expanded="true" aria-controls="wt">#}
         {#                <i class="fas fa-fw fa-ban"></i>#}
@@ -121,7 +121,7 @@
                 <span>设备管理</span></a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="{% url 'show_map' %}" target="view_window">
+            <a class="nav-link" href="{% url 'show_map' %}">
                 <i class="fas fa-fw fa-map-marker"></i>
                 <span>地图展示</span></a>
         </li>
@@ -316,12 +316,12 @@
                                 <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
                                 历史操作
                             </a>
-                            {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
-                                <a class="dropdown-item" href="">
-                                    <i class="fas fa-star fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    白名单管理
-                                </a>
-                            {% endif %}
+{#                            {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}#}
+{#                                <a class="dropdown-item" href="">#}
+{#                                    <i class="fas fa-star fa-sm fa-fw mr-2 text-gray-400"></i>#}
+{#                                    白名单管理#}
+{#                                </a>#}
+{#                            {% endif %}#}
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                 <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
