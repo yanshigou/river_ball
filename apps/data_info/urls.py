@@ -12,9 +12,9 @@ urlpatterns = [
     url(r'^upload/$', UploadLocationInfoView.as_view()),
     url(r'^statistical/(?P<imei_id>\d+)/$', StatisticalToOneView.as_view(), name='statistical'),
     url(r'^track/(?P<imei_id>\d+)/(?P<start_time>.*)/(?P<end_time>.*)$', LocationTrackView.as_view(), name='track'),
-    url(r'^uploadFile/$', UploadTXT.as_view(), name='uploadTXT'),
-    url(r'^uploadedFile/$', Uploaded.as_view(), name='uploaded'),
+    # url(r'^uploadFile/$', UploadTXT.as_view(), name='uploadTXT'),
+    # url(r'^uploadedFile/$', Uploaded.as_view(), name='uploaded'),
     url(r'^ShowTrack/(?P<file_id>\d+)/$', ShowTXTView.as_view(), name='show_txt'),
-    url(r'^delFile/$', DelFile.as_view(), name='delFile'),
+    # url(r'^delFile/$', DelFile.as_view(), name='delFile'),
 
 ]

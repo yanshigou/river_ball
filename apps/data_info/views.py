@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
-from datetime import datetime
-from myutils.utils import create_history_record, gps_amap
+from datetime import datetime, timedelta
+from myutils.utils import create_history_record, gps_amap, gps_conversion
 from .models import LocationInfo, TXT
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
@@ -28,9 +28,23 @@ class LocationInfoView(LoginRequiredMixin, View):
         location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time,
                                                      time__lte=now_time).order_by('-time')
         if location_infos:
-            create_history_record(request.user, '查询设备号%s数据' % location_infos[0].imei.imei)
+            imei = location_infos[0].imei.imei
+            create_history_record(request.user, '查询设备号%s数据' % imei)
+            a = location_infos.values()
+            for i in a:
+                i['imei'] = imei
+                i['speed'] = float(i['speed']) * 0.5144444
+            print(a)
+            return render(request, 'location_infos.html', {
+                "imei_id": imei_id,
+                "imei": imei,
+                "location_data": a,
+                "start_time": start_time,
+                "end_time": now_time
+            })
         return render(request, 'location_infos.html', {
             "imei_id": imei_id,
+            "imei": "",
             "location_data": location_infos,
             "start_time": start_time,
             "end_time": now_time
@@ -81,17 +95,17 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         now_time = datetime.now()
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=now_time).order_by(
-            '-time')
+            'time')
         deivce = DevicesInfo.objects.filter(id=imei_id)
         if deivce:
             imei = deivce[0].imei
         else:
             imei = ""
         for i in location:
-            time_list.append(datetime.strftime(i.time, '%Y%m%d %H:%M:%S'))
-            speed_list.append(i.speed)
-        print(time_list)
-        print(speed_list)
+            time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+            # time_list.append("")
+            print(i.speed)
+            speed_list.append(float(i.speed) * 0.5144444)
         create_history_record(request.user, '查看图形统计')
         return render(request, 'statistical_one.html', {
             "imei": imei,
@@ -109,20 +123,18 @@ class StatisticalToOneView(LoginRequiredMixin, View):
     def post(self, request, imei_id):
         time_list = list()
         speed_list = list()
-        altitude_list = list()
         start_time = request.POST.get('start_time', '')
         end_time = request.POST.get('end_time', '')
         location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=end_time).order_by(
-            '-time')
+            'time')
         deivce = DevicesInfo.objects.filter(id=imei_id)
         if deivce:
             imei = deivce[0].imei
         else:
             imei = ""
         for i in location:
-            time_list.append(datetime.strftime(i.time, '%Y%m%d %H:%M:%S'))
-            speed_list.append(i.speed)
-            altitude_list.append(i.altitude)
+            time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+            speed_list.append(float(i.speed) * 0.5144444)
         print(time_list)
         print(speed_list)
         create_history_record(request.user, '查看图形统计')
@@ -132,7 +144,6 @@ class StatisticalToOneView(LoginRequiredMixin, View):
             # "all_wt_datas": all_wt_datas,
             "time_list": time_list,
             "speed_list": speed_list,
-            "altitude_list": altitude_list,
             # "all_address_count2": all_address_count2,
             # "all_address_count3": all_address_count3,
             # "all_address_count4": all_address_count4,
@@ -152,12 +163,13 @@ class LocationTrackView(LoginRequiredMixin, View):
         print(start_time)
         print(end_time)
         location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=end_time).order_by(
-            '-time')
+            'time')
         lng = list()
         lat = list()
         for i in location:
-            lng.append(float(i.longitude))
-            lat.append(float(i.latitude))
+            longitude, latitude = gps_conversion(i.longitude, i.latitude)
+            lng.append(longitude)
+            lat.append(latitude)
         return render(request, 'track.html', {
             "lng": lng, "lat": lat
         })
