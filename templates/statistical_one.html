@@ -34,7 +34,7 @@
 
             <p id="all_button">
                 <a>
-                    <button type="submit" class="btn btn-primary">筛选统计</button>
+                    <button type="submit" class="btn btn-primary">统计</button>
                 </a>
                 <a href="">
                     <button type="button" class="btn btn-primary">重置</button>
@@ -88,7 +88,7 @@
                             }
                         }
                     },
-                    color: ['#3398DB', '#000'],
+                    color: ['#3398DB'],
                     title:
                         {
                             text: '流速球图形统计'
@@ -97,7 +97,7 @@
                     tooltip: {}
                     ,
                     legend: {
-                        data: ['速度公里/小时', '海拔/米']
+                        data: ['速度 m/s']
                     }
                     ,
                     grid: {
@@ -123,18 +123,27 @@
                     ,
                     yAxis: {}
                     ,
-
+                    dataZoom: [
+                        {
+                            show: true,
+                            realtime: true,
+                            start: 0,
+                            end: 3
+                        },
+                        {
+                            type: 'inside',
+                            realtime: true,
+                            start: 0,
+                            end: 3
+                        }
+                    ],
                     series: [
                         {
-                            name: '速度公里/小时',
+                            name: '速度 m/s',
                             type: 'line',
                             data: {{ speed_list|safe }}
                         },
-                        {
-                            name: '海拔/米',
-                            type: 'line',
-                            data: {{ altitude_list|safe }}
-                        },
+
                     ]
                 }
             ;
