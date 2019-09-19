@@ -142,7 +142,7 @@ class ChangePassword(View):
 
     def post(self, request):
         password_form = PasswordForm(request.POST)
-        print(request.POST)
+        # print(request.POST)
         if password_form.is_valid():
             old_password = request.POST.get('old_password', '')
             password1 = request.POST.get('password1', '')
