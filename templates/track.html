@@ -37,7 +37,7 @@
         <input type="button" class="btn" value="停止动画" id="stop" onclick="stopAnimation()"/>
     </div>
 </div>
-<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=f3ac32ab9a954dc8682206cd3bf90728"></script>
+<script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=5cda232d2d1f782a634096167304eb59"></script>
 <script>
     var lng = {{ lng|safe }};
     var lat = {{ lat|safe }};
@@ -62,10 +62,11 @@
     marker = new AMap.Marker({
         map: map,
         position: [106.509920533,29.5143553667],
-        icon: "https://webapi.amap.com/images/car.png",
+        {#icon: "https://webapi.amap.com/images/car.png",#}
+        icon: "http://111.230.246.188:8088/media/image/ball.png",
         offset: new AMap.Pixel(-26, -13),
-        autoRotation: true,
-        angle:-90,
+        autoRotation: false,
+        angle:0,
     });
 
     // 绘制轨迹
