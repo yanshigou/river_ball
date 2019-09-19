@@ -28,7 +28,7 @@ class DeviceAddView(LoginRequiredMixin, View):
         return render(request, 'device_form_add.html', {})
 
     def post(self, request):
-        print(request.POST)
+        # print(request.POST)
         device_form = DevicesInfoForm(request.POST)
         if device_form.is_valid():
             device_form.save()
@@ -103,9 +103,9 @@ class DeviceDelView(LoginRequiredMixin, View):
 
 class ShowMapView(View):
     def get(self, request):
-        file = MEDIA_ROOT + '\\all_devices_info.txt'
+        file = MEDIA_ROOT + '/all_devices_info.txt'
         all_devices = DevicesInfo.objects.all()
-        print(all_devices)
+        # print(all_devices)
         f = open(file, 'w+', encoding='utf-8')
         for device in all_devices:
             imei = device.imei
@@ -124,8 +124,43 @@ class ShowMapView(View):
             #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
             #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
             #         f.write(a)
-            longitude, latitude = gps_conversion(longitude, latitude)
-            a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + imei_id + '\n'
-            f.write(a)
+            if longitude and latitude:
+                longitude, latitude = gps_conversion(longitude, latitude)
+                a = str(longitude) + ',' + str(latitude) + ',' + imei + '\n'
+                f.write(a)
         f.close()
         return render(request, "map.html", {})
+
+    def post(self, request):
+        file = MEDIA_ROOT + '/all_devices_info.txt'
+        all_devices = DevicesInfo.objects.all()
+        # print(all_devices)
+        f = open(file, 'w+', encoding='utf-8')
+        for device in all_devices:
+            imei = device.imei
+            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+            if location:
+                location = location[0]
+            else:
+                continue
+            longitude = location.longitude
+            latitude = location.latitude
+            imei = location.imei.imei
+            imei_id = str(location.imei.id)
+            # # 百度坐标转换为高德坐标
+            # if longitude and latitude:
+            #     if len(latitude) > 4 and len(longitude) > 3:
+            #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
+            #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
+            #         f.write(a)
+            if longitude and latitude:
+                longitude, latitude = gps_conversion(longitude, latitude)
+                a = str(longitude) + ',' + str(latitude) + ',' + imei + '\n'
+                f.write(a)
+        f.close()
+        return JsonResponse({"status": "success"})
+
+
+class ShowMap2View(View):
+    def get(self, request):
+        return render(request, "map_show.html", {})

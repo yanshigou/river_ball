@@ -20,8 +20,9 @@
 <body>
 <div id="container"></div>
 <!-- 加载地图JSAPI脚本 -->
-<script src="https://webapi.amap.com/maps?v=1.4.13&key=f3ac32ab9a954dc8682206cd3bf90728"></script>
+<script src="https://webapi.amap.com/maps?v=1.4.13&key=5cda232d2d1f782a634096167304eb59"></script>
 <script src="//webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
+<script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
 
 <script>
     var map = new AMap.Map('container', {
@@ -30,85 +31,120 @@
         center: [106.509920533, 29.5143553667] //初始化地图中心点
     });
     AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'],
-function(PointSimplifier, $) {
+        function (PointSimplifier, $) {
 
-        if (!PointSimplifier.supportCanvas) {
-            alert('当前环境不支持 Canvas！');
-            return;
-        }
-
-        var pointSimplifierIns = new PointSimplifier({
-            map: map, //所属的地图实例
-
-            getPosition: function(item) {
-
-                if (!item) {
-                    return null;
-                }
-
-                var parts = item.split(',');
-
-                //返回经纬度
-                return [parseFloat(parts[0]), parseFloat(parts[1])];
-            },
-            getHoverTitle: function(dataItem, idx) {
-                return idx + ': ' + dataItem;
-            },
-            renderOptions: {
-                //点的样式
-                pointStyle: {
-                    fillStyle: 'red',
-                    width: 15,
-                    height: 24,
-                    offset: ['-50%', '-100%'],
-                    lineWidth: 1,
-                    strokeStyle: 'gray',
-                    content: function(ctx, x, y, width, height) {
-
-                        //注意，这里的width和height可能不同于pointStyle里面的width/height， 高清屏幕下会存在比例缩放
-
-                        //这里绘制一个圆顶锥形
-
-                        var yPos = 1 / 3;
-
-                        var top = [x + width / 2, y],
-                            right = [x + width, y + height * yPos],
-                            bottom = [x + width / 2, y + height],
-                            left = [x, y + height * yPos];
-
-                        ctx.moveTo(left[0], left[1]);
-                        ctx.arcTo(top[0], top[1], right[0], right[1], width / 3);
-                        ctx.lineTo(right[0], right[1]);
-                        ctx.lineTo(bottom[0], bottom[1]);
-                        ctx.lineTo(left[0], left[1]);
-
-                    },
-                },
-                //鼠标hover时的title信息
-                hoverTitleStyle: {
-                    position: 'top'
-                }
+            if (!PointSimplifier.supportCanvas) {
+                alert('当前环境不支持 Canvas！');
+                return;
             }
+
+            var pointSimplifierIns = new PointSimplifier({
+                map: map, //所属的地图实例
+
+                getPosition: function (item) {
+
+                    if (!item) {
+                        return null;
+                    }
+
+                    var parts = item.split(',');
+
+                    //返回经纬度
+                    return [parseFloat(parts[0]), parseFloat(parts[1])];
+                },
+                getHoverTitle: function (dataItem, idx) {
+                    return idx + ': ' + dataItem;
+                },
+                renderOptions: {
+                    //点的样式
+                    pointStyle: {
+                        fillStyle: 'red',
+                        width: 15,
+                        height: 24,
+                        offset: ['-50%', '-100%'],
+                        lineWidth: 1,
+                        strokeStyle: 'gray',
+                        content: function (ctx, x, y, width, height) {
+
+                            //注意，这里的width和height可能不同于pointStyle里面的width/height， 高清屏幕下会存在比例缩放
+
+                            //这里绘制一个圆顶锥形
+
+                            var yPos = 1 / 3;
+
+                            var top = [x + width / 2, y],
+                                right = [x + width, y + height * yPos],
+                                bottom = [x + width / 2, y + height],
+                                left = [x, y + height * yPos];
+
+                            ctx.moveTo(left[0], left[1]);
+                            ctx.arcTo(top[0], top[1], right[0], right[1], width / 3);
+                            ctx.lineTo(right[0], right[1]);
+                            ctx.lineTo(bottom[0], bottom[1]);
+                            ctx.lineTo(left[0], left[1]);
+
+                        },
+                    },
+                    iconStyle: '//webapi.amap.com/theme/v1.3/markers/b/mark_r.png',
+                    //鼠标hover时的title信息
+                    hoverTitleStyle: {
+                        position: 'top'
+                    }
+                }
+            });
+
+            window.pointSimplifierIns = pointSimplifierIns;
+
+            $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+            var url = window.location.pathname;
+            console.log(url);
+
+            $.get('/media/all_devices_info.txt', function (csv) {
+
+                {#$.get('{% url "point" %}', function(csv) {#}
+
+                var data = csv.split('\n');
+                console.log(data);
+                pointSimplifierIns.setData(data);
+
+                $('#loadingTip').remove();
+            });
+
+            pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
+                //console.log(e.type, record);
+            });
+
+            function shuaxin() {
+                console.log(1);
+                $.ajax({
+                    method: 'POST',
+                    url: url,
+                    success: function (data) {
+                        $.get('/media/all_devices_info.txt', function (csv) {
+
+                            {#$.get('{% url "point" %}', function(csv) {#}
+
+                            var data = csv.split('\n');
+                            console.log(data);
+                            pointSimplifierIns.setData(data);
+
+                            $('#loadingTip').remove();
+                        });
+
+                        pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
+                            //console.log(e.type, record);
+                        });
+                    }
+                })
+            }
+
+            /*每10秒刷新一次*/
+            setInterval(function () {
+                    shuaxin();
+                },
+                10000);
+
         });
-
-        window.pointSimplifierIns = pointSimplifierIns;
-
-        $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
-        $.get('/media/all_devices_info.txt', function(csv) {
-
-        {#$.get('{% url "point" %}', function(csv) {#}
-
-            var data = csv.split('\n');
-            console.log(data);
-            pointSimplifierIns.setData(data);
-
-            $('#loadingTip').remove();
-        });
-
-        pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function(e, record) {
-            //console.log(e.type, record);
-        });
-    });
 
 </script>
 </body>
