@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import datetime, timedelta
-from myutils.utils import create_history_record, gps_amap, gps_conversion
-from .models import LocationInfo, TXT
+from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data
+from .models import LocationInfo, TXT, DevicesOneNetInfo
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
 from .forms import TXTInfoForm, LocationInfoSerializer
@@ -33,8 +33,13 @@ class LocationInfoView(LoginRequiredMixin, View):
             a = location_infos.values()
             for i in a:
                 i['imei'] = imei
-                i['speed'] = float(i['speed']) * 0.5144444
-            print(a)
+                if i['time']:
+                    i['time'] = i['time'] + timedelta(hours=8)
+                if i['speed']:
+                    i['speed'] = float(i['speed']) * 0.5144444
+                if i['longitude'] and i['latitude']:
+                    i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+            # print(a)
             return render(request, 'location_infos.html', {
                 "imei_id": imei_id,
                 "imei": imei,
@@ -56,9 +61,28 @@ class LocationInfoView(LoginRequiredMixin, View):
         location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time,
                                                      time__lte=end_time).order_by('-time')
         if location_infos:
+            imei = location_infos[0].imei.imei
             create_history_record(request.user, '查询设备号%s数据' % location_infos[0].imei.imei)
+            a = location_infos.values()
+            for i in a:
+                i['imei'] = imei
+                if i['time']:
+                    i['time'] = i['time'] + timedelta(hours=8)
+                if i['speed']:
+                    i['speed'] = float(i['speed']) * 0.5144444
+                if i['longitude'] and i['latitude']:
+                    i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+            # print(a)
+            return render(request, 'location_infos.html', {
+                "imei_id": imei_id,
+                "imei": imei,
+                "location_data": a,
+                "start_time": start_time,
+                "end_time": end_time
+            })
         return render(request, 'location_infos.html', {
             "imei_id": imei_id,
+            "imei": "",
             "location_data": location_infos,
             "start_time": start_time,
             "end_time": end_time
@@ -72,13 +96,76 @@ class UploadLocationInfoView(APIView):
             imei = request.data.get('imei')
             imei_id = DevicesInfo.objects.get(imei=imei).id
             request.data['imei'] = imei_id
-            print(request.data)
+            # print(request.data)
             location_sers = LocationInfoSerializer(data=request.data)
             if location_sers.is_valid():
                 location_sers.save()
                 return JsonResponse({"status": "success"})
             print(location_sers.errors)
             return JsonResponse({"status": "fail", "errors": str(location_sers.errors)})
+        except Exception as e:
+            print(e)
+            return JsonResponse({"status": "error", "error": str(e)})
+
+
+# OneNet回传信息
+class OneNetDataView(APIView):
+    def post(self, request):
+        try:
+            print("oneNet")
+            # print(request.data)
+            current_data = request.data.get('current_data')[0]
+            dev_id = current_data.get('dev_id')
+            one_net = DevicesOneNetInfo.objects.filter(dev_id=dev_id)
+            if one_net:
+                imei_id = one_net[0].imei.id
+            else:
+                return JsonResponse({"status": "error", "error": 'device not exist'})
+            user_id = current_data.get('user_id')
+            ds_id = current_data.get('ds_id')
+            value = current_data.get('value')
+            up_time = current_data.get('at')
+            if ds_id == 'liusuqiu':
+                data_list = value.split('#')
+                for d in data_list:
+                    d_list = d.split(',')
+                    if len(d) > 10 and d_list[0] == '$GNRMC':
+                        print('$GNRMC', d_list)
+                        time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
+                        longitude = d_list[5]
+                        latitude = d_list[3]
+                        speed = d_list[7]
+                        direction = d_list[8]
+                        EW_hemisphere = d_list[6]
+                        NS_hemisphere = d_list[4]
+                        # print(time)
+                        # print(longitude)
+                        # print(latitude)
+                        # print(speed)
+                        # print(direction)
+                        # print(EW_hemisphere)
+                        # print(NS_hemisphere)
+                    elif len(d) > 10 and d_list[0] == '$GNGGA':
+                        print('$GNGGA', d_list)
+                        satellites = d_list[7]
+                        accuracy = d_list[8]
+                        altitude = d_list[9]
+                        # print(satellites)
+                        # print(accuracy)
+                        # print(altitude)
+
+                location_sers = LocationInfoSerializer(data={
+                    "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude, "latitude": latitude,
+                    "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
+                    "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
+                    "NS_hemisphere": NS_hemisphere
+                })
+                if location_sers.is_valid():
+                    location_sers.save()
+                    return JsonResponse({"status": "success"})
+                print(location_sers.errors)
+
+            return JsonResponse({"status": "fail"})
         except Exception as e:
             print(e)
             return JsonResponse({"status": "error", "error": str(e)})
@@ -104,7 +191,7 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         for i in location:
             time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
             # time_list.append("")
-            print(i.speed)
+            # print(i.speed)
             speed_list.append(float(i.speed) * 0.5144444)
         create_history_record(request.user, '查看图形统计')
         return render(request, 'statistical_one.html', {
@@ -135,8 +222,8 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         for i in location:
             time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
             speed_list.append(float(i.speed) * 0.5144444)
-        print(time_list)
-        print(speed_list)
+        # print(time_list)
+        # print(speed_list)
         create_history_record(request.user, '查看图形统计')
         return render(request, 'statistical_one.html', {
             "imei": imei,
@@ -167,9 +254,10 @@ class LocationTrackView(LoginRequiredMixin, View):
         lng = list()
         lat = list()
         for i in location:
-            longitude, latitude = gps_conversion(i.longitude, i.latitude)
-            lng.append(longitude)
-            lat.append(latitude)
+            if i.longitude and i.latitude:
+                longitude, latitude = gps_conversion(i.longitude, i.latitude)
+                lng.append(longitude)
+                lat.append(latitude)
         return render(request, 'track.html', {
             "lng": lng, "lat": lat
         })
@@ -214,7 +302,7 @@ class ShowTXTView(LoginRequiredMixin, View):
     """
     def get(self, request, file_id):
         file = TXT.objects.get(id=file_id)
-        path2 = MEDIA_ROOT + "\\" + str(file.filename)
+        path2 = MEDIA_ROOT + "/" + str(file.filename)
         print(path2)
         lng = []
         lat = []
@@ -265,7 +353,7 @@ class DelFile(LoginRequiredMixin, View):
             filename = txt.filename
             txt.delete()
             print(filename)
-            src_filename = MEDIA_ROOT + "\\" + str(filename)
+            src_filename = MEDIA_ROOT + "/" + str(filename)
             if os.path.exists(src_filename):
                 os.remove(src_filename)
                 print('del %s ok' % src_filename)
