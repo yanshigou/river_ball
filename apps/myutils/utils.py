@@ -4,6 +4,7 @@ __date__ = "2019/5/10"
 from users.models import HistoryRecord, Message
 import math
 import requests
+import pynmea2
 
 
 # 操作记录
@@ -139,7 +140,7 @@ def _transformlng(lng, lat):
 # 批量GPS转高德
 def gps_amap(locations):
     api = "http://restapi.amap.com/v3/assistant/coordinate/convert?locations={}" \
-          "&coordsys=gps&key=f3ac32ab9a954dc8682206cd3bf90728"
+          "&coordsys=gps&key=5cda232d2d1f782a634096167304eb59"
     gps = ""
     for l in locations:
         gps += str(l[0]) + ',' + str(l[1]) + '|'
@@ -151,7 +152,7 @@ def gps_amap(locations):
 # 批量百度转高德
 def baidu_amap(locations):
     api = "http://restapi.amap.com/v3/assistant/coordinate/convert?locations={}" \
-          "&coordsys=baidu&key=f3ac32ab9a954dc8682206cd3bf90728"
+          "&coordsys=baidu&key=5cda232d2d1f782a634096167304eb59"
     gps = ""
     for l in locations:
         gps += str(l[0]) + ',' + str(l[1]) + '|'
@@ -163,7 +164,7 @@ def baidu_amap(locations):
 # 单个GPS转高德
 def gps_map(location):
     api = "http://restapi.amap.com/v3/assistant/coordinate/convert?locations={}" \
-          "&coordsys=gps&key=f3ac32ab9a954dc8682206cd3bf90728"
+          "&coordsys=gps&key=5cda232d2d1f782a634096167304eb59"
     gps = str(location[0]) + ',' + str(location[1])
     url = api.format(gps)
     res = requests.get(url)
@@ -182,3 +183,9 @@ def gps_conversion(longitude, latitude):
     latitude = latitude1 + '.' + latitude2
     print(latitude)
     return wgs84_to_gcj02(float(longitude), float(latitude))
+
+
+def check_one_net_data(value):
+
+    msg = pynmea2.parse(value)
+    return msg
