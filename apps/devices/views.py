@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
-from myutils.utils import create_history_record, gps_conversion
+from myutils.utils import create_history_record, gps_conversion, one_net_register
 from .models import DevicesInfo
-from data_info.models import LocationInfo
+from data_info.models import LocationInfo, DevicesOneNetInfo
 from .forms import DevicesInfoForm
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
@@ -32,9 +32,13 @@ class DeviceAddView(LoginRequiredMixin, View):
         device_form = DevicesInfoForm(request.POST)
         if device_form.is_valid():
             device_form.save()
-            create_history_record(request.user, '新增设备 %s' % request.POST.get('imei'))
-            return JsonResponse({"status": "success"})
-
+            imei, dev_id = one_net_register(request.POST.get('imei'))
+            imei_id = DevicesInfo.objects.get(imei=imei).id
+            if imei and dev_id:
+                DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
+                create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
+                return JsonResponse({"status": "success"})
+            return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
         return JsonResponse({
             "status": "fail",
             "errors": "设备IMEI号唯一且必填"
