@@ -12,7 +12,8 @@ from river_ball.settings import MEDIA_ROOT
 class DevicesInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
-        all_devices = DevicesInfo.objects.all()
+        # all_devices = DevicesInfo.objects.all()
+        all_devices = DevicesOneNetInfo.objects.all()
         create_history_record(request.user, '查询所有设备')
         return render(request, 'devices.html', {
             "all_devices": all_devices,
