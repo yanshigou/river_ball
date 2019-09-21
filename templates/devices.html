@@ -78,21 +78,21 @@
                         <tbody id="t_body">
                         {% for device in all_devices %}
                             <tr>
-                                <td>{{ device.imei }}</td>
-                                <td>{{ device.imei }}</td>
-                                <td>{{ device.desc|default_if_none:"" }}</td>
+                                <td>{{ device.imei.imei }}</td>
+                                <td>{{ device.dev_id }}</td>
+                                <td>{{ device.imei.desc|default_if_none:"" }}</td>
                                 {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
                                     <td>
-                                        <a href="{% url 'device_modify' device.id %}">
+                                        <a href="{% url 'device_modify' device.imei.id %}">
                                             <button type="button" class="btn btn-warning" style="line-height: 1">修改
                                             </button>
                                         </a>
-                                        <a href="{% url 'device_view' device.id %}">
+                                        <a href="{% url 'device_view' device.imei.id %}">
                                             <button type="button" class="btn btn-success" style="line-height: 1">查看
                                             </button>
                                         </a>
                                         <button type="button" class="btn btn-danger"
-                                                onclick="return deviceb({{ device.id }})" style="line-height: 1">删除
+                                                onclick="return deviceb({{ device.imei.id }})" style="line-height: 1">删除
                                         </button>
                                     </td>
                                 {% else %}
@@ -103,7 +103,7 @@
 
                                 <td>
                                     {% if device.longitude and device.latitude %}
-                                        <a href="{% url 'show_one_to_map' device.id %}" target="view_window">
+                                        <a href="{% url 'show_one_to_map' device.imei.id %}" target="view_window">
                                             <button type="button" class="btn btn-success" style="line-height: 1">地图查看
                                             </button>
                                         </a>
