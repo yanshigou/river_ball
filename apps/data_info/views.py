@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from django.core.urlresolvers import reverse
 from river_ball.settings import MEDIA_ROOT
 import os
+import re
 
 
 class SelectDevice(LoginRequiredMixin, View):
@@ -25,7 +26,8 @@ class LocationInfoView(LoginRequiredMixin, View):
     def get(self, request, imei_id):
         now_time = datetime.now()
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
-        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time,
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                      time__lte=now_time).order_by('-time')
         if location_infos:
             imei = location_infos[0].imei.imei
@@ -36,7 +38,7 @@ class LocationInfoView(LoginRequiredMixin, View):
                 if i['time']:
                     i['time'] = i['time'] + timedelta(hours=8)
                 if i['speed']:
-                    i['speed'] = float(i['speed']) * 0.5144444
+                    i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
                 if i['longitude'] and i['latitude']:
                     i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
             # print(a)
@@ -58,7 +60,8 @@ class LocationInfoView(LoginRequiredMixin, View):
     def post(self, request, imei_id):
         start_time = request.POST.get('start_time', '')
         end_time = request.POST.get('end_time', '')
-        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time,
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                      time__lte=end_time).order_by('-time')
         if location_infos:
             imei = location_infos[0].imei.imei
@@ -69,7 +72,7 @@ class LocationInfoView(LoginRequiredMixin, View):
                 if i['time']:
                     i['time'] = i['time'] + timedelta(hours=8)
                 if i['speed']:
-                    i['speed'] = float(i['speed']) * 0.5144444
+                    i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
                 if i['longitude'] and i['latitude']:
                     i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
             # print(a)
@@ -126,44 +129,48 @@ class OneNetDataView(APIView):
             value = current_data.get('value')
             up_time = current_data.get('at')
             if ds_id == 'liusuqiu':
-                data_list = value.split('#')
-                for d in data_list:
-                    d_list = d.split(',')
-                    if len(d) > 10 and d_list[0] == '$GNRMC':
-                        print('$GNRMC', d_list)
-                        time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
-                        longitude = d_list[5]
-                        latitude = d_list[3]
-                        speed = d_list[7]
-                        direction = d_list[8]
-                        EW_hemisphere = d_list[6]
-                        NS_hemisphere = d_list[4]
-                        # print(time)
-                        # print(longitude)
-                        # print(latitude)
-                        # print(speed)
-                        # print(direction)
-                        # print(EW_hemisphere)
-                        # print(NS_hemisphere)
-                    elif len(d) > 10 and d_list[0] == '$GNGGA':
-                        print('$GNGGA', d_list)
-                        satellites = d_list[7]
-                        accuracy = d_list[8]
-                        altitude = d_list[9]
-                        # print(satellites)
-                        # print(accuracy)
-                        # print(altitude)
+                re_data_list = re.findall(r'\$GNRMC.*', value, re.S)
+                if re_data_list:
+                    value = re_data_list[0]
+                    if "$GNGGA" in value and value.count('##') >= 2:
+                        data_list = value.split('##')
+                        for d in data_list:
+                            d_list = d.split(',')
+                            if len(d) > 10 and d_list[0] == '$GNRMC':
+                                print('$GNRMC', d_list)
+                                time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
+                                longitude = d_list[5]
+                                latitude = d_list[3]
+                                speed = d_list[7]
+                                direction = d_list[8]
+                                EW_hemisphere = d_list[6]
+                                NS_hemisphere = d_list[4]
+                                # print(time)
+                                # print(longitude)
+                                # print(latitude)
+                                # print(speed)
+                                # print(direction)
+                                # print(EW_hemisphere)
+                                # print(NS_hemisphere)
+                            elif len(d) > 10 and d_list[0] == '$GNGGA':
+                                print('$GNGGA', d_list)
+                                satellites = d_list[7]
+                                accuracy = d_list[8]
+                                altitude = d_list[9]
+                                # print(satellites)
+                                # print(accuracy)
+                                # print(altitude)
 
-                location_sers = LocationInfoSerializer(data={
-                    "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude, "latitude": latitude,
-                    "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
-                    "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
-                    "NS_hemisphere": NS_hemisphere
-                })
-                if location_sers.is_valid():
-                    location_sers.save()
-                    return JsonResponse({"status": "success"})
-                print(location_sers.errors)
+                        location_sers = LocationInfoSerializer(data={
+                            "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude, "latitude": latitude,
+                            "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
+                            "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
+                            "NS_hemisphere": NS_hemisphere
+                        })
+                        if location_sers.is_valid():
+                            location_sers.save()
+                            return JsonResponse({"status": "success"})
+                        print(location_sers.errors)
 
             return JsonResponse({"status": "fail"})
         except Exception as e:
@@ -181,7 +188,8 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         speed_list = list()
         now_time = datetime.now()
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=now_time).order_by(
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=now_time).order_by(
             'time')
         deivce = DevicesInfo.objects.filter(id=imei_id)
         if deivce:
@@ -191,8 +199,8 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         for i in location:
             time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
             # time_list.append("")
-            # print(i.speed)
-            speed_list.append(float(i.speed) * 0.5144444)
+            # print(i.speed) float('%0.2f' % (float(i['speed']) * 0.5144444))
+            speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
         create_history_record(request.user, '查看图形统计')
         return render(request, 'statistical_one.html', {
             "imei": imei,
@@ -211,8 +219,9 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         time_list = list()
         speed_list = list()
         start_time = request.POST.get('start_time', '')
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
         end_time = request.POST.get('end_time', '')
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=end_time).order_by(
+        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time).order_by(
             'time')
         deivce = DevicesInfo.objects.filter(id=imei_id)
         if deivce:
@@ -221,7 +230,7 @@ class StatisticalToOneView(LoginRequiredMixin, View):
             imei = ""
         for i in location:
             time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
-            speed_list.append(float(i.speed) * 0.5144444)
+            speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
         # print(time_list)
         # print(speed_list)
         create_history_record(request.user, '查看图形统计')
@@ -247,9 +256,8 @@ class LocationTrackView(LoginRequiredMixin, View):
     def get(self, request, imei_id, start_time, end_time):
         # now_time = datetime.now()
         # start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
-        print(start_time)
-        print(end_time)
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time, time__lte=end_time).order_by(
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time).order_by(
             'time')
         lng = list()
         lat = list()
