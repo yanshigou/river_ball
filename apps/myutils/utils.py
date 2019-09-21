@@ -5,6 +5,7 @@ from users.models import HistoryRecord, Message
 import math
 import requests
 import pynmea2
+import json
 
 
 # 操作记录
@@ -172,16 +173,16 @@ def gps_map(location):
 
 
 def gps_conversion(longitude, latitude):
-    print(longitude.split('.'))
+    # print(longitude.split('.'))
     longitude1 = longitude.split('.')[0][:3]
     longitude2 = str(int((int("".join(longitude[3:].split('.'))) / 60)))
     longitude = longitude1 + '.' + longitude2
-    print(longitude)
+    # print(longitude)
 
     latitude1 = latitude.split('.')[0][:2]
     latitude2 = str(int((int("".join(latitude[2:].split('.'))) / 60)))
     latitude = latitude1 + '.' + latitude2
-    print(latitude)
+    # print(latitude)
     return wgs84_to_gcj02(float(longitude), float(latitude))
 
 
@@ -189,3 +190,20 @@ def check_one_net_data(value):
 
     msg = pynmea2.parse(value)
     return msg
+
+
+def one_net_register(imei):
+    data = {
+        "sn": imei,
+        "title": imei
+    }
+    res = requests.post('http://api.heclouds.com/register_de?register_code=GBzk1E9e6vd0soTE', data=json.dumps(data))
+    res_data = res.json()
+    errno = res_data.get('errno')
+    print(res_data)
+    if errno == 0:
+        dev_id = res_data['data']['device_id']
+        print(dev_id)
+    else:
+        dev_id = 0
+    return imei, dev_id
