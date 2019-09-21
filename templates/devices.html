@@ -40,7 +40,7 @@
 {#                </a>#}
 
 
-                {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
+                {% if request.user.permission == "superadmin" %}
                 <a href="{% url 'device_add' %}">
                     <button type="button" class="btn btn-success" >新增设备</button>
                 </a>
@@ -60,6 +60,7 @@
                         <thead>
                         <tr>
                             <th>设备IMEI号</th>
+                            <th>OneNetID</th>
                             <th>描述</th>
                             <th>操作</th>
                             <th>查看地图</th>
@@ -68,6 +69,7 @@
                         <tfoot>
                         <tr>
                             <th>设备IMEI号</th>
+                            <th>OneNetID</th>
                             <th>描述</th>
                             <th>操作</th>
                             <th>查看地图</th>
@@ -76,6 +78,7 @@
                         <tbody id="t_body">
                         {% for device in all_devices %}
                             <tr>
+                                <td>{{ device.imei }}</td>
                                 <td>{{ device.imei }}</td>
                                 <td>{{ device.desc|default_if_none:"" }}</td>
                                 {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}

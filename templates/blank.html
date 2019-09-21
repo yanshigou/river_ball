@@ -100,7 +100,7 @@
         {##}
         {#                </div>#}
         {#            </div>#}
-        </li>
+{#        </li>#}
 
 
         {#    {% if request.user.permission == "superadmin" %}#}
@@ -337,7 +337,7 @@
 
             <!-- Begin Page Content -->
             {% block page_content %}
-                <iframe src="{% url 'show_map' %}" width="100%" height="800px" frameborder="0">
+                <iframe src="{% url 'show_map' %}" width="100%" height="750px" frameborder="0">
                  </iframe>
             {% endblock %}
             <!-- /.container-fluid -->
