@@ -74,7 +74,7 @@
                             <th>速度 m/s</th>
                             <th>方向</th>
                             <th>测量精度</th>
-                            <th>剩余电量</th>
+                            <th>剩余电量(V)</th>
                             <th>搜星数量</th>
                             <th>实际使用卫星数量</th>
                         </tr>
@@ -88,7 +88,7 @@
                             <th>速度 m/s</th>
                             <th>方向</th>
                             <th>测量精度</th>
-                            <th>剩余电量</th>
+                            <th>剩余电量(V)</th>
                             <th>搜星数量</th>
                             <th>实际使用卫星数量</th>
                         </tr>
@@ -103,7 +103,7 @@
                                 <td>{{ data.speed }}</td>
                                 <td>{{ data.direction }}</td>
                                 <td>{{ data.accuracy }}</td>
-                                <td>{{ data.power }}</td>
+                                <td>{{ data.power|default_if_none:"" }}</td>
                                 <td>{{ data.satellites }}</td>
                                 <td>{{ data.real_satellites }}</td>
                             </tr>
