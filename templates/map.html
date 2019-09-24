@@ -53,7 +53,12 @@
                     return [parseFloat(parts[0]), parseFloat(parts[1])];
                 },
                 getHoverTitle: function (dataItem) {
-                    return dataItem;
+                    var s = dataItem.split(',');
+                    {#var speed = #}
+                    var imei = s[2];
+                    var speed = s[3];
+                    var data = "设备号:" + imei + '  速度m/s:' + speed;
+                    return data;
                 },
                 renderOptions: {
                     //点的样式
@@ -104,7 +109,7 @@
                 {#$.get('{% url "point" %}', function(csv) {#}
 
                 var data = csv.split('\n');
-                console.log(data);
+                {#console.log(data);#}
                 pointSimplifierIns.setData(data);
 
                 $('#loadingTip').remove();
@@ -118,7 +123,7 @@
             });
 
             function shuaxin() {
-                console.log(1);
+
                 $.ajax({
                     method: 'POST',
                     url: url,
@@ -128,7 +133,7 @@
                             {#$.get('{% url "point" %}', function(csv) {#}
 
                             var data = csv.split('\n');
-                            console.log(data);
+                            {#console.log(data);#}
                             pointSimplifierIns.setData(data);
 
                             $('#loadingTip').remove();

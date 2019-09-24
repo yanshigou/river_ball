@@ -124,15 +124,18 @@ class ShowMapView(View):
             latitude = location.latitude
             imei = location.imei.imei
             imei_id = str(location.imei.id)
+            speed = location.speed
             # # 百度坐标转换为高德坐标
             # if longitude and latitude:
             #     if len(latitude) > 4 and len(longitude) > 3:
             #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
             #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
             #         f.write(a)
-            if longitude and latitude:
+            if longitude and latitude and speed:
+                speed = float('%0.2f' % (float(speed) * 0.5144444))
+                print(speed)
                 longitude, latitude = gps_conversion(longitude, latitude)
-                a = str(longitude) + ',' + str(latitude) + ',' + imei + '\n'
+                a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + '\n'
                 f.write(a)
         f.close()
         return render(request, "map.html", {})
@@ -153,15 +156,18 @@ class ShowMapView(View):
             latitude = location.latitude
             imei = location.imei.imei
             imei_id = str(location.imei.id)
+            speed = location.speed
             # # 百度坐标转换为高德坐标
             # if longitude and latitude:
             #     if len(latitude) > 4 and len(longitude) > 3:
             #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
             #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
             #         f.write(a)
-            if longitude and latitude:
+            if longitude and latitude and speed:
+                speed = float('%0.2f' % (float(speed) * 0.5144444))
+                print(speed)
                 longitude, latitude = gps_conversion(longitude, latitude)
-                a = str(longitude) + ',' + str(latitude) + ',' + imei + '\n'
+                a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + '\n'
                 f.write(a)
         f.close()
         return JsonResponse({"status": "success"})
