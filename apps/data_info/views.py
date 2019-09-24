@@ -191,7 +191,7 @@ class AppLocationInfoView(View):
         #     })
 
 
-class AppExportLocationInfoView(View):
+class ExportLocationInfoView(View):
     def post(self, request):
         try:
             start_time = request.POST.get('start_time', '')
