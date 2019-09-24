@@ -6,6 +6,7 @@ import math
 import requests
 import pynmea2
 import json
+import xlsxwriter
 
 
 # 操作记录
@@ -207,3 +208,32 @@ def one_net_register(imei):
     else:
         dev_id = 0
     return imei, dev_id
+
+
+# 导出Excel
+def export_excel(location_infos, sheet_info, filename):
+    print('utils excel')
+
+    title = ['设备序列号', '采集时间', '经度', '纬度', '海拔/米', '速度 m/s', '测量经度', '当前电压(V)', '卫星数量', '方向']
+
+    f = xlsxwriter.Workbook(filename)
+    fsheet = f.add_worksheet(sheet_info)
+    # 首行格式
+    format1 = f.add_format({
+        'bold': True, 'font_color': 'black', 'font_size': 15, 'align': 'center', 'font_name': '宋体'
+    })
+    # 内容格式
+    format2 = f.add_format({'font_color': 'black', 'font_size': 12, 'align': 'center', 'font_name': '宋体'})
+    format3 = f.add_format({'font_color': 'blue', 'font_size': 12, 'align': 'center', 'font_name': '宋体'})
+
+    # 设置A-K列 宽 20
+    fsheet.set_column("A:J", 20)
+    # 写入首行
+    for t in range(len(title)):
+        fsheet.write(0, t, title[t], format1)
+    # 写入数据
+    for i in range(len(location_infos)):
+        wt_data = location_infos[i]
+        for x in range(len(wt_data)):
+            fsheet.write(i + 1, x, wt_data[x], format2)
+    f.close()
