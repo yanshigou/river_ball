@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "dzt"
 __date__ = "2019/9/4"
-from .models import LocationInfo
+from .models import LocationInfo, DevicesInfo
 from django import forms
 from rest_framework import serializers
 
@@ -22,3 +22,9 @@ class LocationInfoSerializer(serializers.ModelSerializer):
 class TXTInfoForm(forms.Form):
     info = forms.CharField(label=u'文件备注', min_length=1)
     filename = forms.FileField(label=u'上传文件')
+
+
+class DevicesInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DevicesInfo
+        fields = '__all__'
