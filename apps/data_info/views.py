@@ -2,16 +2,17 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import datetime, timedelta
-from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data
+from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data, export_excel
 from .models import LocationInfo, TXT, DevicesOneNetInfo
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
-from .forms import TXTInfoForm, LocationInfoSerializer
+from .forms import TXTInfoForm, LocationInfoSerializer, DevicesInfoSerializer
 from rest_framework.views import APIView
 from django.core.urlresolvers import reverse
 from river_ball.settings import MEDIA_ROOT
 import os
 import re
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 class SelectDevice(LoginRequiredMixin, View):
@@ -20,6 +21,23 @@ class SelectDevice(LoginRequiredMixin, View):
         return render(request, 'select_device.html', {
             "all_devices": all_devices
         })
+
+
+class AppSelectDevice(View):
+    def get(self, request):
+        try:
+            all_devices = DevicesInfo.objects.all()
+            d_sers = DevicesInfoSerializer(all_devices, many=True)
+            return JsonResponse({
+                "error_no": 0,
+                "data": d_sers.data
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
 
 
 class LocationInfoView(LoginRequiredMixin, View):
@@ -43,7 +61,7 @@ class LocationInfoView(LoginRequiredMixin, View):
                 if i['longitude'] and i['latitude']:
                     i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
                 if i['power'] and len(i['power']) > 4:
-                    i['power'] = float('%0.2f' % (float(i['power'][3:])*0.001))
+                    i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
             # print(a)
             return render(request, 'location_infos.html', {
                 "imei_id": imei_id,
@@ -80,7 +98,7 @@ class LocationInfoView(LoginRequiredMixin, View):
                 if i['longitude'] and i['latitude']:
                     i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
                 if i['power'] and len(i['power']) > 4:
-                    i['power'] = float('%0.2f' % (float(i['power'][3:])*0.001))
+                    i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
             # print(a)
             return render(request, 'location_infos.html', {
                 "imei_id": imei_id,
@@ -96,6 +114,143 @@ class LocationInfoView(LoginRequiredMixin, View):
             "start_time": start_time,
             "end_time": end_time
         })
+
+
+class AppLocationInfoView(View):
+    def post(self, request):
+        # try:
+            start_time = request.POST.get('start_time', '')
+            end_time = request.POST.get('end_time', '')
+            imei_id = request.POST.get('imei_id', '')
+            username = request.POST.get('username', '')
+            start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+            end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+            location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                         time__lte=end_time2).order_by('-time')
+            # all_count = location_infos.count()
+            # page = all_count // 20
+            # if page <= 1:
+            #     page = 1
+            # else:
+            #     page += 1
+            # print('count', all_count)
+            # print('count2', page)
+            page = request.POST.get('page', '1')
+            print(page)
+            paginator = Paginator(location_infos, 20)
+            try:
+                location_info_page = paginator.page(page)
+            except PageNotAnInteger:
+                location_info_page = paginator.page(1)
+            except EmptyPage:
+                location_info_page = paginator.page(paginator.num_pages)
+            if location_info_page:
+                imei = location_infos[0].imei.imei
+                create_history_record(username, 'app查询设备号%s数据' % imei)
+                a = LocationInfoSerializer(location_info_page, many=True).data
+                for i in a:
+                    i['imei'] = imei
+                    if i['time']:
+                        i['time'] = datetime.strftime(
+                            datetime.strptime(i['time'], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                    if i['speed']:
+                        i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                    if i['longitude'] and i['latitude']:
+                        i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                    if i['power'] and len(i['power']) > 4:
+                        i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+                data = {
+                    "imei_id": imei_id,
+                    "imei": imei,
+                    "location_data": a,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "total": paginator.num_pages
+                }
+                return JsonResponse({
+                    "error_no": 0,
+                    "data": data
+                })
+            data = {
+                "imei_id": imei_id,
+                "imei": "",
+                "location_data": LocationInfoSerializer(location_infos, many=True).data,
+                "start_time": start_time,
+                "end_time": end_time,
+                "total": paginator.num_pages
+            }
+            return JsonResponse({
+                "error_no": 0,
+                "data": data
+            })
+        # except Exception as e:
+        #     print(e)
+        #     return JsonResponse({
+        #         "error_no": -1,
+        #         "info": str(e)
+        #     })
+
+
+class AppExportLocationInfoView(View):
+    def post(self, request):
+        try:
+            start_time = request.POST.get('start_time', '')
+            end_time = request.POST.get('end_time', '')
+            imei_id = request.POST.get('imei_id', '')
+            print(start_time)
+            print(end_time)
+            print(imei_id)
+            start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+            end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+            print(start_time2)
+            print(end_time2)
+            location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                         time__lte=end_time2).order_by('-time')
+            if location_infos:
+                imei = location_infos[0].imei.imei
+                create_history_record(request.user, 'app查询设备号%s数据' % location_infos[0].imei.imei)
+                a = LocationInfoSerializer(location_infos, many=True).data
+                location_datas = list()
+                for i in a:
+                    i['imei'] = imei
+                    if i['time']:
+                        i['time'] = datetime.strftime(
+                            datetime.strptime(i['time'], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                    if i['speed']:
+                        i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                    if i['longitude'] and i['latitude']:
+                        i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                    if i['power'] and len(i['power']) > 4:
+                        i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+                    data = [
+                        i['imei'], i['time'], i['longitude'], i['latitude'], i['altitude'], i['speed'], i['accuracy'],
+                        i['power'], i['satellites'], i['direction']
+                    ]
+
+                    location_datas.append(data)
+                if location_datas:
+                    print("excel")
+                    print(location_datas)
+                    now = datetime.now()
+                    name = datetime.strftime(now, '%m-%d-%H-%M-%S')
+                    filename = 'media/excel/流速球数据' + name + '.xlsx'
+                    file = '流速球数据' + name + '.xlsx'
+                    export_excel(location_datas, '流速球数据', filename)
+                    create_history_record(request.user, '流速球数据导出Excel：%s' % file)
+                    return JsonResponse({
+                        "status": "success",
+                        "media_url": "/" + filename,
+                        "file": file
+                    })
+                return JsonResponse({
+                    "status": 'fail'
+                })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
 
 
 # 设备信息上传
@@ -169,7 +324,8 @@ class OneNetDataView(APIView):
                                 power = d_list[0]
 
                         location_sers = LocationInfoSerializer(data={
-                            "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude, "latitude": latitude,
+                            "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude,
+                            "latitude": latitude,
                             "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
                             "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
                             "NS_hemisphere": NS_hemisphere, "power": power
@@ -282,7 +438,7 @@ class LocationTrackView(LoginRequiredMixin, View):
             s_e_point = gps_conversion(location[0].longitude, location[0].latitude)
             print(s_e_point)
         else:
-            s_e_point = [106.53233,29.522584]
+            s_e_point = [106.53233, 29.522584]
         return render(request, 'track.html', {
             "lng": lng, "lat": lat, "s_e_point": s_e_point
         })
@@ -292,6 +448,7 @@ class UploadTXT(LoginRequiredMixin, View):
     """
     上传GPS文件
     """
+
     def get(self, request):
         form = TXTInfoForm()
         return render(request, 'upload.html', {"form": form})
@@ -325,6 +482,7 @@ class ShowTXTView(LoginRequiredMixin, View):
     """
     GPS文件轨迹展示
     """
+
     def get(self, request, file_id):
         file = TXT.objects.get(id=file_id)
         path2 = MEDIA_ROOT + "/" + str(file.filename)
