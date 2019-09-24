@@ -52,8 +52,8 @@
                     //返回经纬度
                     return [parseFloat(parts[0]), parseFloat(parts[1])];
                 },
-                getHoverTitle: function (dataItem, idx) {
-                    return idx + ': ' + dataItem;
+                getHoverTitle: function (dataItem) {
+                    return dataItem;
                 },
                 renderOptions: {
                     //点的样式
@@ -109,6 +109,9 @@
 
                 $('#loadingTip').remove();
             });
+            // 离线
+
+            //
 
             pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
                 //console.log(e.type, record);
@@ -142,7 +145,7 @@
             setInterval(function () {
                     shuaxin();
                 },
-                10000);
+                2000);
 
         });
 
