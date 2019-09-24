@@ -135,6 +135,40 @@ class LoginView(View):
             return render(request, 'login.html', {'login_form': login_form})
 
 
+class AppLoginView(View):
+
+    def post(self, request):
+        try:
+            user_name = request.POST.get('username', '')
+            pass_word = request.POST.get('password', '')
+            user = authenticate(username=user_name, password=pass_word)
+            if user is not None:
+                if user.is_active:
+                    login(request, user)
+                    create_history_record(user, "app登录")
+                    return JsonResponse({
+                        "error_no": 0
+                    })
+                else:
+                    print("用户未激活")
+                    return JsonResponse({
+                        "error_no": 3,
+                        "info": "用户未激活"
+                    })
+            else:
+                print("用户名或密码错误")
+                return JsonResponse({
+                    "error_no": 2,
+                    "info": "用户名或密码错误"
+                })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
 # 修改密码
 class ChangePassword(View):
     def get(self, request):
@@ -164,6 +198,50 @@ class ChangePassword(View):
                 return render(request, 'change_password.html', {'msg': '原密码错误'})
         else:
             return render(request, 'change_password.html', {'password_form': password_form})
+
+
+class AppChangePassword(View):
+
+    def post(self, request):
+        try:
+            old_password = request.POST.get('old_password', '')
+            password1 = request.POST.get('password1', '')
+            password2 = request.POST.get('password2', '')
+            print(old_password)
+            print(password1)
+            print(password2)
+            user = authenticate(username=request.user.username, password=old_password)
+            print(user)
+            if not user:
+                return JsonResponse({
+                    "error_no": 1,
+                    "info": "请先登录后, 再修改密码"
+                })
+            if user is not None:
+                if password1 == password2:
+                    userinfo = UserProfile.objects.get(username=user)
+                    userinfo.password = make_password(password1)
+                    userinfo.save()
+                    create_history_record(user, "app修改密码")
+                    return JsonResponse({
+                        "error_no": 0
+                    })
+                else:
+                    return JsonResponse({
+                        "error_no": 1,
+                        "info": "两次密码不一致"
+                    })
+            else:
+                return JsonResponse({
+                    "error_no": 1,
+                    "info": "原密码错误"
+                })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
 
 
 class ResetPasswordView(View):
@@ -196,6 +274,17 @@ class LogoutView(View):
         logout(request)
         return HttpResponseRedirect(reverse("login"))
         # return HttpResponse('退出成功')
+
+
+class AppLogoutView(View):
+    def get(self, request):
+        create_history_record(request.user, "退出登录")
+        logout(request)
+        # return HttpResponseRedirect(reverse("login"))
+        # return HttpResponse('退出成功')
+        return JsonResponse({
+            "error_no": 0
+        })
 
 
 class Index(View):
