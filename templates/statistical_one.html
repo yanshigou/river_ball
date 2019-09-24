@@ -34,7 +34,7 @@
 
             <p id="all_button">
                 <a>
-                    <button type="submit" class="btn btn-primary">统计</button>
+                    <button type="submit" class="btn btn-primary">筛选</button>
                 </a>
                 <a href="">
                     <button type="button" class="btn btn-primary">重置</button>
@@ -66,17 +66,7 @@
                     toolbox: {
                         show: true,
                         feature: {
-                            dataView: {//数据视图工具，可以展现当前图表所用的数据，编辑后可以动态更新。
-                                show: true,//是否显示组件。
-                                readOnly: false
-                            },
-                            magicType: {//动态类型切换 示例：feature: { magicType: {type: ['line', 'bar', 'stack', 'tiled']}}
-                                show: true,
-                                type: ['line']
-                            },
-                            restore: {//配置项还原。
-                                show: true
-                            },
+
                             saveAsImage: {
                                 show: true,
                                 excludeComponents:
@@ -97,30 +87,33 @@
                     tooltip: {}
                     ,
                     legend: {
-                        data: ['速度 m/s']
+                        data: ['速度 m/s'],
+
                     }
                     ,
                     grid: {
                         left: '10%',
                         bottom: '25%',
-                        right: '1%'
+                        right: '5%'
                         {#containLabel: true#}
                     }
                     ,
                     xAxis: {
+                        {#show: false,#}
                         type: 'category',
                         data: {{ time_list|safe }},
                         axisLabel: {
-                            interval: 0,
-                            rotate:
-                                40
+                            interval: 100000,
+                            showMinLabel: true,
+                            showMaxLabel: true,
+                            {#rotate:#}
+                            {#    40#}
                         }
                         ,
                         axisTick: {
                             alignWithLabel: true
                         }
-                    }
-                    ,
+                    },
                     yAxis: {}
                     ,
                     dataZoom: [
@@ -128,20 +121,29 @@
                             show: true,
                             realtime: true,
                             start: 0,
-                            end: 3
+                            end: 100
                         },
                         {
                             type: 'inside',
                             realtime: true,
                             start: 0,
-                            end: 3
+                            end: 100
                         }
                     ],
                     series: [
                         {
                             name: '速度 m/s',
                             type: 'line',
-                            data: {{ speed_list|safe }}
+                            data: {{ speed_list|safe }},
+                            itemStyle: {
+                                normal: {
+                                    label: {
+                                        show: true,
+                                        position: [-15, -20],
+
+                                    }
+                                }
+                            },
                         },
 
                     ]
