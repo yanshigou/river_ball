@@ -32,7 +32,6 @@ class LocationInfo(models.Model):
         unique_together = ('time', 'longitude', 'latitude')
 
 
-
 class TXT(models.Model):
     info = models.CharField(max_length=30, verbose_name='备注', default='')
     filename = models.FileField(upload_to='txt', verbose_name='文件名')

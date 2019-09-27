@@ -18,7 +18,23 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 class SelectDevice(LoginRequiredMixin, View):
     def get(self, request):
-        all_devices = DevicesInfo.objects.all()
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_devices = DevicesInfo.objects.all()
+        else:
+            try:
+                company = request.user.company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return render(request, 'select_device.html', {
+                    "all_devices": "",
+                })
+            if company:
+                all_devices = DevicesInfo.objects.filter(company__company_name=company)
+            else:
+                all_devices = ""
         return render(request, 'select_device.html', {
             "all_devices": all_devices
         })
@@ -43,6 +59,63 @@ class AppSelectDevice(View):
 
 class LocationInfoView(LoginRequiredMixin, View):
     def get(self, request, imei_id):
+
+        permission = request.user.permission
+        print(permission)
+        now_time = datetime.now().replace(microsecond=0)
+        start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        end_time = now_time + timedelta(hours=-8)
+        if permission != 'superadmin':
+            device = DevicesInfo.objects.filter(id=imei_id)
+            try:
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select_device'))
+            if company and device and device_company == company:
+                location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                             time__lte=end_time).order_by('-time')
+                if location_infos:
+                    imei = location_infos[0].imei.imei
+                    create_history_record(request.user, '查询设备号%s数据' % imei)
+                    a = location_infos.values()
+                    for i in a:
+                        i['imei'] = imei
+                        if i['time']:
+                            i['time'] = i['time'] + timedelta(hours=8)
+                        if i['speed']:
+                            i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                        if i['longitude'] and i['latitude']:
+                            i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                        if i['power'] and len(i['power']) > 4:
+                            i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+                    # print(a)
+                    return render(request, 'location_infos.html', {
+                        "imei_id": imei_id,
+                        "imei": imei,
+                        "location_data": a,
+                        "start_time": start_time,
+                        "end_time": now_time
+                    })
+                return render(request, 'location_infos.html', {
+                    "imei_id": imei_id,
+                    "imei": "",
+                    "location_data": location_infos,
+                    "start_time": start_time,
+                    "end_time": now_time
+                })
+            else:
+                return render(request, 'location_infos.html', {
+                    "imei_id": imei_id,
+                    "imei": "",
+                    "location_data": "",
+                    "start_time": start_time,
+                    "end_time": now_time
+                })
+
         now_time = datetime.now().replace(microsecond=0)
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
