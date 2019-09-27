@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
@@ -77,7 +78,7 @@ class DeviceModifyView(LoginRequiredMixin, View):
             device_form.save()
             create_history_record(request.user, '修改设备 %s 的信息' % deviceinfo.imei)
             return JsonResponse({"status": "success"})
-        print(device_form.errors)
+        # print(device_form.errors)
         if 'area' in device_form.errors:
             return JsonResponse({
                 "status": "fail",
@@ -95,10 +96,10 @@ class DeviceDelView(LoginRequiredMixin, View):
 
     def post(self, request):
         device_id = request.POST.get('device_id', "")
-        print(device_id)
+        # print(device_id)
         device = DevicesInfo.objects.filter(id=device_id)
         infos = LocationInfo.objects.filter(imei_id=device_id)
-        print(infos)
+        # print(infos)
         if infos:
             return JsonResponse({"status": "fail", "msg": "该设备下有数据，禁止删除。"})
         device_imei = device[0].imei
@@ -125,26 +126,30 @@ class ShowMapView(View):
             imei = location.imei.imei
             imei_id = str(location.imei.id)
             speed = location.speed
-            # # 百度坐标转换为高德坐标
-            # if longitude and latitude:
-            #     if len(latitude) > 4 and len(longitude) > 3:
-            #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
-            #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
-            #         f.write(a)
+            time = location.time
+            if time:
+                now_time = datetime.now()
+                if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                    status = "离线"
+                else:
+                    status = "在线"
+            else:
+                status = "离线"
             if longitude and latitude and speed:
                 speed = float('%0.2f' % (float(speed) * 0.5144444))
-                print(speed)
+                # print(speed)
                 longitude, latitude = gps_conversion(longitude, latitude)
-                a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + '\n'
+                a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + "," + status + '\n'
                 f.write(a)
         f.close()
-        return render(request, "map.html", {})
+        return render(request, "map.html")
 
     def post(self, request):
-        file = MEDIA_ROOT + '/all_devices_info.txt'
+        # file = MEDIA_ROOT + '/all_devices_info.txt'
         all_devices = DevicesInfo.objects.all()
         # print(all_devices)
-        f = open(file, 'w+', encoding='utf-8')
+        # f = open(file, 'w+', encoding='utf-8')
+        a = ""
         for device in all_devices:
             imei = device.imei
             location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
@@ -157,20 +162,52 @@ class ShowMapView(View):
             imei = location.imei.imei
             imei_id = str(location.imei.id)
             speed = location.speed
-            # # 百度坐标转换为高德坐标
-            # if longitude and latitude:
-            #     if len(latitude) > 4 and len(longitude) > 3:
-            #         lon, lat = bd09_to_gcj02(float(longitude), float(latitude))
-            #         a = str(lon) + ',' + str(lat) + ',' + imei + ',' + imei_id + '\n'
-            #         f.write(a)
+            time = location.time
+            if time:
+                now_time = datetime.now()
+                if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                    status = "离线"
+                else:
+                    status = "在线"
+            else:
+                status = "离线"
             if longitude and latitude and speed:
                 speed = float('%0.2f' % (float(speed) * 0.5144444))
-                print(speed)
+                # print(speed)
                 longitude, latitude = gps_conversion(longitude, latitude)
-                a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + '\n'
-                f.write(a)
-        f.close()
-        return JsonResponse({"status": "success"})
+                a += str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + "," + status + '\n'
+                # f.write(a)
+        # f.close()
+        return JsonResponse({"status": "success", "str_data": a})
+
+
+class test11(LoginRequiredMixin, View):
+    def get(self, request):
+        all_devices = DevicesInfo.objects.all()
+        data = []
+        for device in all_devices:
+            imei = device.imei
+            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+            if location:
+                location_values = location.values()[0]
+            else:
+                continue
+            if location_values['time']:
+                now_time = datetime.now()
+                if now_time + timedelta(minutes=-1) > (location_values['time'] + timedelta(hours=8)):
+                    status = "离线"
+                else:
+                    status = "在线"
+            else:
+                status = "离线"
+            if location_values['longitude'] and location_values['latitude'] and location_values['speed']:
+                location_values['speed'] = float('%0.2f' % (float(location_values['speed']) * 0.5144444))
+                # print(speed)
+                location_values['longitude'], location_values['latitude'] = gps_conversion(location_values['longitude'], location_values['latitude'])
+            # print(location_values)
+            data.append(location_values)
+        # print(data)
+        return render(request, '111.html', {"data": data})
 
 
 class ShowMap2View(View):
@@ -183,7 +220,7 @@ class AppLastLocation(View):
         try:
             imei_list = request.POST.get('imei_list', "")
             imei_list = imei_list.split(',')
-            print(imei_list)
+            # print(imei_list)
             data_list = list()
             for imei in imei_list:
                 location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')

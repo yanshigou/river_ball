@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.db import models
 
 # Create your models here.
@@ -5,7 +6,7 @@ from django.db import models
 
 class DevicesInfo(models.Model):
     imei = models.CharField(max_length=20, verbose_name='设备号', unique=True)
-    desc = models.CharField(max_length=100, null=True, blank=True, verbose_name='描述')
+    desc = models.CharField(max_length=100, verbose_name='描述', unique=True)
 
 
 class DeviceSettingsInfo(models.Model):
