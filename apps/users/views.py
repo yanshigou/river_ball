@@ -5,12 +5,13 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render
 from .forms import RegisterForm, LoginForm, UploadImageForm, UserInfoForm, PasswordForm
-from .models import UserProfile, HistoryRecord, Message
+from .models import UserProfile, HistoryRecord, Message, CompanyModel
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, make_message
 from django.core.urlresolvers import reverse
 from datetime import datetime, timedelta
 from django.db.models import Q
+from devices.models import DevicesInfo
 
 
 class RegisterView2(LoginRequiredMixin, View):
@@ -24,19 +25,25 @@ class RegisterView2(LoginRequiredMixin, View):
         user = UserProfile.objects.get(username=username)
         # print(user.permission)
         if user.permission == 'superadmin':
+            company_id = CompanyModel.objects.all()
             return render(request, 'register2.html', {
                 'register_form': register_form,
-                'permission': user.permission
+                'permission': user.permission,
+                "company_id": company_id
             })
         elif user.permission == 'admin':
+            company_id = user.company.id
             return render(request, 'register2.html', {
                 'register_form': register_form,
-                'permission': user.permission
+                'permission': user.permission,
+                "company_id": company_id
             })
         else:
+            company_id = user.company.id
             return render(request, 'register2.html', {
                 'permission': user.permission,
-                'msg': '您没有权限注册其他账号，请联系管理员'
+                'msg': '您没有权限注册其他账号，请联系管理员',
+                "company_id": company_id
             })
 
     def post(self, request):
@@ -53,6 +60,7 @@ class RegisterView2(LoginRequiredMixin, View):
             password = '123456'
         # print(password)
         permission = request.POST.get('permission', 'user')
+        company_id = request.POST.get('company', '')
         username = request.POST.get('username', '')
         if not username or UserProfile.objects.filter(username=username):
             return JsonResponse({
@@ -73,6 +81,7 @@ class RegisterView2(LoginRequiredMixin, View):
         user_profile.username = username
         user_profile.password = make_password(password)
         user_profile.permission = permission
+        user_profile.company_id = company_id
         user_profile.save()
         # 记录操作
         if permission == "superadmin":
@@ -80,7 +89,7 @@ class RegisterView2(LoginRequiredMixin, View):
         elif permission == "admin":
             permission = "管理员"
         elif permission == "user":
-            permission = "普通管理员"
+            permission = "用户"
         elif permission == "other":
             permission = "其他类型用户"
         make_message(username, "初始密码过于简单，请立即修改密码！", -1)
@@ -142,8 +151,8 @@ class AppLoginView(View):
             user_name = request.POST.get('username', '')
             pass_word = request.POST.get('password', '')
             user = authenticate(username=user_name, password=pass_word)
-            print(user_name)
-            print(pass_word)
+            # print(user_name)
+            # print(pass_word)
             if user is not None:
                 if user.is_active:
                     login(request, user)
@@ -208,7 +217,10 @@ class AppChangePassword(View):
             old_password = request.POST.get('old_password', '')
             password1 = request.POST.get('password1', '')
             password2 = request.POST.get('password2', '')
+            # print(username)
+            # print(old_password)
             user = authenticate(username=username, password=old_password)
+            print(user)
             if not user:
                 return JsonResponse({
                     "error_no": 1,
@@ -324,11 +336,12 @@ class UploadImageView(LoginRequiredMixin, View):
 class AllUsersView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
-        if permission not in ['superadmin', 'admin']:
-            return HttpResponseRedirect(reverse("user_info"))
-        all_users = UserProfile.objects.all()
-        if permission == 'admin':
-            all_users = all_users.exclude(permission='superadmin')
+        if permission == 'superadmin':
+            all_users = UserProfile.objects.all()
+        else:
+            compan_id = request.user.company.id
+            print(compan_id)
+            all_users = UserProfile.objects.filter(company_id=compan_id)
         create_history_record(request.user, '查询所有用户信息')
         return render(request, 'all_users.html', {
             "all_users": all_users
@@ -433,3 +446,66 @@ def page_error(request):
     response = render(request, '500.html', {})
     response.status_code = 500
     return response
+
+
+class CompanyAddView(LoginRequiredMixin, View):
+    """
+    新建公司
+    """
+
+    def get(self, request):
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+
+            return render(request, 'company_form_add.html')
+        else:
+            return HttpResponseRedirect(reverse("index"))
+
+    def post(self, request):
+        company_name = request.POST.get('company_name', "")
+        try:
+            CompanyModel.objects.create(company_name=company_name)
+            return JsonResponse({
+                "status": "success"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "status": "fail",
+                "errors": "公司名称唯一"
+            })
+
+
+class CompanyView(LoginRequiredMixin, View):
+    def get(self, request):
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_company = CompanyModel.objects.all().order_by('id')
+            return render(request, 'company_info.html', {"all_company": all_company})
+        else:
+            return HttpResponseRedirect(reverse("index"))
+
+
+class DelCompanView(LoginRequiredMixin, View):
+    def post(self, request):
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            try:
+                company_id = request.POST.get('company_id', "")
+                dev_infos = DevicesInfo.objects.filter(company_id=company_id)
+                company = CompanyModel.objects.filter(id=company_id)
+                # print(infos)
+                if dev_infos:
+                    return JsonResponse({"status": "fail", "msg": "该公司下有设备，禁止删除。"})
+                company_name = company[0].company_name
+                company.delete()
+                create_history_record(request.user, '删除公司 %s' % company_name)
+                return JsonResponse({"status": "success"})
+            except Exception as e:
+                print(e)
+                return JsonResponse({"status": "fail", "msg": str(e)})
+        else:
+            return HttpResponseRedirect(reverse("index"))

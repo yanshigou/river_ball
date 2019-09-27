@@ -4,7 +4,8 @@ __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import LoginView, LogoutView, UserInfoView, ChangePassword, UploadImageView
 from .views import AllUsersView, ChangePermissionView, DelUserView, HistoryRecordView, AllHistoryRecordView
-from .views import RegisterView2, ResetPasswordView, MessageView, AppLoginView, AppChangePassword, AppLogoutView
+from .views import RegisterView2, ResetPasswordView, MessageView, AppLoginView, AppChangePassword, AppLogoutView, \
+    CompanyAddView, CompanyView, DelCompanView
 
 
 urlpatterns = [
@@ -24,4 +25,7 @@ urlpatterns = [
     url(r'^historyRecord/$', HistoryRecordView.as_view(), name='history_record'),
     url(r'^allHistoryRecord/(?P<user_name>.*)/$', AllHistoryRecordView.as_view(), name='aLL_history_record'),
     url(r'^message/$', MessageView.as_view(), name='message'),
+    url(r'^addCompany/$', CompanyAddView.as_view(), name='company_add'),
+    url(r'^companyInfo/$', CompanyView.as_view(), name='company_info'),
+    url(r'^companyDel/$', DelCompanView.as_view(), name='company_del'),
 ]

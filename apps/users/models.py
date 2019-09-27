@@ -6,16 +6,20 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
+class CompanyModel(models.Model):
+    company_name = models.CharField(max_length=50, verbose_name='公司名称', unique=True)
+
+
 class UserProfile(AbstractUser):
     permission_list = (
         ('superadmin', '超级管理员'),
         ('admin', '管理员'),
-        ('user', '普通管理员'),
+        ('user', '用户'),
         ('other', '其他用户')
     )
     name = models.CharField(max_length=20, verbose_name='姓名', default='')
     gender = models.CharField(max_length=10, choices=(('male', '男'), ('female', '女')), default='male')
-    company = models.CharField(max_length=100, blank=True, null=True, verbose_name='所属单位')
+    company = models.ForeignKey(CompanyModel, verbose_name='所属公司', null=True, blank=True)
     unique_id = models.CharField(max_length=18, blank=True, null=True, verbose_name='唯一识别号')
     mobile = models.CharField(max_length=11, null=True, blank=True, verbose_name='联系电话')
     image = models.ImageField(upload_to="image/%Y/%m", default='image/default.png', max_length=100)
