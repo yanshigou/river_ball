@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
@@ -127,14 +128,6 @@ class AppLocationInfoView(View):
             end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
             location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                          time__lte=end_time2).order_by('-time')
-            # all_count = location_infos.count()
-            # page = all_count // 20
-            # if page <= 1:
-            #     page = 1
-            # else:
-            #     page += 1
-            # print('count', all_count)
-            # print('count2', page)
             page = request.POST.get('page', '1')
             print(page)
             paginator = Paginator(location_infos, 20)
@@ -197,13 +190,13 @@ class ExportLocationInfoView(View):
             start_time = request.POST.get('start_time', '')
             end_time = request.POST.get('end_time', '')
             imei_id = request.POST.get('imei_id', '')
-            print(start_time)
-            print(end_time)
-            print(imei_id)
+            # print(start_time)
+            # print(end_time)
+            # print(imei_id)
             start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
             end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-            print(start_time2)
-            print(end_time2)
+            # print(start_time2)
+            # print(end_time2)
             location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                          time__lte=end_time2).order_by('-time')
             if location_infos:
@@ -229,11 +222,11 @@ class ExportLocationInfoView(View):
 
                     location_datas.append(data)
                 if location_datas:
-                    print("excel")
-                    print(location_datas)
+                    # print("excel")
+                    # print(location_datas)
                     now = datetime.now()
                     name = datetime.strftime(now, '%m-%d-%H-%M-%S')
-                    filename = 'media/excel/流速球数据' + name + '.xlsx'
+                    filename = 'media/excel/location_data_' + name + '.xlsx'
                     file = '流速球数据' + name + '.xlsx'
                     export_excel(location_datas, '流速球数据', filename)
                     create_history_record(request.user, '流速球数据导出Excel：%s' % file)
@@ -265,7 +258,7 @@ class UploadLocationInfoView(APIView):
             if location_sers.is_valid():
                 location_sers.save()
                 return JsonResponse({"status": "success"})
-            print(location_sers.errors)
+            # print(location_sers.errors)
             return JsonResponse({"status": "fail", "errors": str(location_sers.errors)})
         except Exception as e:
             print(e)
@@ -291,11 +284,11 @@ class OneNetDataView(APIView):
             up_time = current_data.get('at')
             if ds_id == 'liusuqiu':
                 re_data_list = re.findall(r"\$GNRMC[^#]*##\$GNGGA[^#]*##[^#]*##", value, re.S)
-                print('re_data_list', re_data_list)
+                # print('re_data_list', re_data_list)
                 if re_data_list:
                     for v in re_data_list:
                         data_list = v.split('##')
-                        print('data_list', data_list)
+                        # print('data_list', data_list)
                         direction = ""
                         EW_hemisphere = ""
                         NS_hemisphere = ""
@@ -334,7 +327,8 @@ class OneNetDataView(APIView):
                         if location_sers.is_valid():
                             location_sers.save()
                         else:
-                            print(location_sers.errors)
+                            # print(location_sers.errors)
+                            print('is_valid error')
                     return JsonResponse({"status": "success"})
 
             return JsonResponse({"status": "fail"})
@@ -436,7 +430,7 @@ class LocationTrackView(LoginRequiredMixin, View):
                 lat.append(latitude)
         if location:
             s_e_point = gps_conversion(location[0].longitude, location[0].latitude)
-            print(s_e_point)
+            # print(s_e_point)
         else:
             s_e_point = [106.53233, 29.522584]
         return render(request, 'track.html', {
@@ -486,7 +480,7 @@ class ShowTXTView(LoginRequiredMixin, View):
     def get(self, request, file_id):
         file = TXT.objects.get(id=file_id)
         path2 = MEDIA_ROOT + "/" + str(file.filename)
-        print(path2)
+        # print(path2)
         lng = []
         lat = []
         locations = []
@@ -497,11 +491,11 @@ class ShowTXTView(LoginRequiredMixin, View):
                 lnglat = [float(arrline[1]), float(arrline[2])]
                 locations.append(lnglat)
             f.close()
-            print(len(locations))
+            # print(len(locations))
             # 批量转换经纬度 个数限制
             if len(locations) <= 40:
                 res = gps_amap(locations)
-                print(res.json())
+                # print(res.json())
                 if res.status_code != 200:
                     return JsonResponse({"status": "fail"})
                 amap_locations = res.json().get('locations')
@@ -535,7 +529,7 @@ class DelFile(LoginRequiredMixin, View):
             txt = TXT.objects.get(id=file_id)
             filename = txt.filename
             txt.delete()
-            print(filename)
+            # print(filename)
             src_filename = MEDIA_ROOT + "/" + str(filename)
             if os.path.exists(src_filename):
                 os.remove(src_filename)

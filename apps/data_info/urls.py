@@ -9,7 +9,7 @@ urlpatterns = [
     url(r'^selectDevice/$', SelectDevice.as_view(), name='select_device'),
     url(r'^appSelectDevice/$', AppSelectDevice.as_view()),
     url(r'^locationInfo/(?P<imei_id>\d+)/$', LocationInfoView.as_view(), name='location_info'),
-    url(r'^appExportLocationInfo/$', ExportLocationInfoView.as_view(), name='export_location_info'),
+    url(r'^ExportLocationInfo/$', ExportLocationInfoView.as_view(), name='export_location_info'),
     url(r'^appLocationInfo/$', AppLocationInfoView.as_view()),
     url(r'^upload/$', UploadLocationInfoView.as_view()),
     url(r'^rawData/$', OneNetDataView.as_view()),
