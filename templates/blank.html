@@ -45,23 +45,21 @@
         <li {% if request.path == '/' %}class="nav-item active table-active" {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'index' %}">
                 <i class="fas fa-fw fa-desktop"></i>
-                <span>主页</span></a>
+                <span style="font-size: 20px">主页</span></a>
         </li>
 
         <!-- Divider -->
         <hr class="sidebar-divider">
 
+
         <!-- Heading -->
-        <div class="sidebar-heading" style="font-size: 15px">
-            流速球信息
-        </div>
 
         <!-- Nav Item - Pages Collapse Menu -->
         <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/locationInfo' in request.path or 'dataInfo/statistical' in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select_device' %}">
                 <i class="fas fa-fw fa-info"></i>
-                <span>流速球监控</span>
+                <span style="font-size: 20px">流速球监控</span>
             </a>
         </li>
 {#        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"#}
@@ -109,21 +107,18 @@
 
         <!-- Heading -->
 
-        <div class="sidebar-heading" style="font-size: 15px">
-            设备综合管理
-        </div>
-
         <!-- Nav Item - Charts -->
         <li {% if 'devices/info' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'devices_info' %}">
                 <i class="fas fa-fw fa-baseball-ball"></i>
-                <span>设备管理</span></a>
+                <span style="font-size: 20px">设备管理</span></a>
         </li>
+        <hr class="sidebar-divider">
         <li class="nav-item">
             <a class="nav-link" href="{% url 'show_map' %}">
                 <i class="fas fa-fw fa-map-marker"></i>
-                <span>地图展示</span></a>
+                <span style="font-size: 20px">地图展示</span></a>
         </li>
 
         {#        {% if request.user.permission == "superadmin" or request.user.permission == "admin"%}#}
@@ -154,9 +149,6 @@
         <!-- Divider -->
         {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
             <hr class="sidebar-divider d-none d-md-block">
-            <div class="sidebar-heading" style="font-size: 15px">
-                用户管理
-            </div>
 
             {#            {% if request.user.permission == "superadmin"  %}#}
             {#                <li {% if 'users/whiteList' in request.path %}class="nav-item active table-active"#}
@@ -171,7 +163,13 @@
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'all_users' %}">
                     <i class="fas fa-fw fa-user"></i>
-                    <span>用户管理</span></a>
+                    <span style="font-size: 20px">用户管理</span></a>
+            </li>
+            <li {% if 'users/companyInfo' in request.path or "users/addCompany" in request.path or "users/companyDel" in request.path %}class="nav-item active table-active"
+                {% else %}class="nav-item"{% endif %}>
+                <a class="nav-link" href="{% url 'company_info' %}">
+                    <i class="fas fa-fw fa-house-damage"></i>
+                    <span style="font-size: 20px">公司管理</span></a>
             </li>
         {% endif %}
 

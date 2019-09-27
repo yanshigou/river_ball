@@ -34,12 +34,16 @@
                 <div class="card-body p-0">
                     <!-- Nested Row within Card Body -->
                     <div class="row">
-                        <div class="col-lg-6 d-none d-lg-block"
-                             style="background: url({% static 'images/test2.jpg' %});background-position: center;background-size: cover;"></div>
+{#                        <div class="col-lg-6 d-none d-lg-block"#}
+{#                             style="background: url({% static 'images/test3.png' %});background-position: center center;background-size: cover;"></div>#}
+                        <div class="col-lg-6 d-none d-lg-block" align="center" style="padding-top: 80px;" >
+                            <img src="{% static 'images/test3.png' %}" style="width: 300px; height: 300px;" alt="">
+                        </div>
+
                         <div class="col-lg-6">
                             <div class="p-5">
                                 <div class="text-center">
-                                    <img src="{% static 'images/favicon.ico' %}" alt="">
+                                    {#                                    <img src="{% static 'images/favicon.ico' %}" alt="">#}
                                     <h1 class="h4 text-gray-900 mb-4">欢迎使用流速球后台管理系统！</h1>
                                 </div>
                                 <form class="user" method="post">
@@ -55,7 +59,7 @@
                                     <div class="form-group">
                                         <input type="password" class="form-control form-control-user"
                                                id="exampleInputPassword" placeholder="请输入密码..." name="password"
-                                        value="{{ password }}">
+                                               value="{{ password }}">
                                         <div style="color: red">
                                             {% for key,error in login_form.errors.items %}{% if key == 'password' %}
                                                 {{ error }}{% endif %}
@@ -63,7 +67,8 @@
                                     </div>
                                     <div class="form-group">
                                         <div class="custom-control custom-checkbox small">
-                                            <input type="checkbox" class="custom-control-input" name="remember" id="customCheck">
+                                            <input type="checkbox" class="custom-control-input" name="remember"
+                                                   id="customCheck" checked>
                                             <label class="custom-control-label" for="customCheck">记住密码</label>
                                         </div>
                                     </div>

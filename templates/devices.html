@@ -40,7 +40,7 @@
 {#                </a>#}
 
 
-                {% if request.user.permission == "superadmin" %}
+                {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
                 <a href="{% url 'device_add' %}">
                     <button type="button" class="btn btn-success" >新增设备</button>
                 </a>
@@ -62,6 +62,9 @@
                             <th>设备序列号</th>
                             <th>设备内部序列号</th>
                             <th>描述</th>
+                            {% if request.user.permission == "superadmin" %}
+                            <th>所属公司</th>
+                            {% endif %}
                             <th>操作</th>
 {#                            <th>查看地图</th>#}
                         </tr>
@@ -71,6 +74,9 @@
                             <th>设备序列号</th>
                             <th>设备内部序列号</th>
                             <th>描述</th>
+                            {% if request.user.permission == "superadmin" %}
+                            <th>所属公司</th>
+                            {% endif %}
                             <th>操作</th>
 {#                            <th>查看地图</th>#}
                         </tr>
@@ -81,6 +87,9 @@
                                 <td>{{ device.imei.imei }}</td>
                                 <td>{{ device.dev_id }}</td>
                                 <td>{{ device.imei.desc|default_if_none:"" }}</td>
+                                {% if request.user.permission == "superadmin" %}
+                                <td>{{ device.imei.company.company_name|default_if_none:"" }}</td>
+                                {% endif %}
                                 {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
                                     <td>
                                         <a href="{% url 'device_view' device.imei.id %}">

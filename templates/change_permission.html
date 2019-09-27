@@ -34,18 +34,18 @@
                 <div class="col-md-3 col-sm-5 col-xs-12">
                     <select class="form-control select" name="permission">
                         {% if request.user.permission == "superadmin" %}
-                            <option value="user" selected>普通管理员</option>
+                            <option value="user" selected>用户</option>
 {#                            <option value="other">其他类型用户</option>#}
                             <option value="admin">管理员</option>
 {#                            <option value="superadmin" style="color: red" disabled>超级管理员</option>#}
                         {% elif request.user.permission == "admin" %}
-                            <option value="user" selected>普通管理员</option>
+                            <option value="user" selected>用户</option>
 {#                            <option value="other">其他类型用户</option>#}
 {#                            <option value="admin" style="color: red" disabled>管理员</option>#}
 {#                            <option value="superadmin" style="color: red" disabled>超级管理员</option>#}
                         {% else %}
                             <option value="" style="color: red" selected>没有权限</option>
-                            <option value="user" style="color: red" disabled>普通管理员</option>
+                            <option value="user" style="color: red" disabled>用户</option>
 {#                            <option value="other" style="color: red" disabled>其他类型用户</option>#}
 {#                            <option value="admin" style="color: red" disabled>管理员</option>#}
 {#                            <option value="superadmin" style="color: red" disabled>超级管理员</option>#}

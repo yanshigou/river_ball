@@ -24,7 +24,7 @@
         {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
             <div style="text-align:right;">
                 <a href="{% url 'register' %}">
-                    <button type="button" class="btn btn-success">新增管理员</button>
+                    <button type="button" class="btn btn-success">新增用户</button>
                 </a>
             </div>
         {% endif %}
@@ -42,6 +42,9 @@
                         <tr>
                             <th>用户名</th>
                             <th>权限</th>
+                            {% if request.user.permission == "superadmin" %}
+                                <th>所属公司</th>
+                            {% endif %}
                             <th>操作</th>
                         </tr>
                         </thead>
@@ -49,6 +52,9 @@
                         <tr>
                             <th>用户名</th>
                             <th>权限</th>
+                            {% if request.user.permission == "superadmin" %}
+                                <th>所属公司</th>
+                            {% endif %}
                             <th>操作</th>
                         </tr>
                         </tfoot>
@@ -57,6 +63,9 @@
                             <tr>
                                 <td>{{ user.username }}</td>
                                 <td>{{ user.get_permission_display }}</td>
+                                {% if request.user.permission == "superadmin" %}
+                                    <td>{{ user.company.company_name }}</td>
+                                {% endif %}
                                 <td>
                                     {% if  request.user.username != user.username and request.user.permission != user.permission %}
                                         {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}

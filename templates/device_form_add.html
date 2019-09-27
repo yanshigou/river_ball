@@ -41,6 +41,20 @@
                     <input type="text" class="form-control" name="desc" value="">
                 </div>
             </div>
+            {% if request.user.permission == "superadmin" %}
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">所属公司 *</label>
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <select name="company" class="form-control col-md-7 col-xs-12" >
+                        {% for c in company_id %}
+                            <option value="{{ c.id }}" >{{ c.company_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            {% else %}
+            <input type="hidden" value="{{ company_id }}" name="company">
+            {% endif %}
 
             <div class="ln_solid"></div>
             <div class="form-group">

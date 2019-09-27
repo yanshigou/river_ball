@@ -141,9 +141,9 @@
             var url = window.location.pathname;
 
             pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
-                            {#console.log(e.type, record);#}
-                        });
-
+                {#console.log(e.type, record);#}
+            });
+            shuaxin();
 
 
             function shuaxin() {
@@ -153,13 +153,16 @@
                     url: url,
                     success: function (csv) {
 
-
-
                         var data = csv.str_data.split('\n');
                         console.log(data);
-                        pointSimplifierIns.setData(data);
+                        console.log(data.length);
+                        if (data.length <= 1) {
 
-                        $('#loadingTip').remove();
+                        } else {
+                            pointSimplifierIns.setData(data);
+
+                            $('#loadingTip').remove();
+                        }
 
 
                     }
