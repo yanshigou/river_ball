@@ -8,4 +8,4 @@ from devices.models import DevicesInfo
 class DevicesInfoForm(forms.ModelForm):
     class Meta:
         model = DevicesInfo
-        fields = ["imei", 'desc']
+        fields = ["imei", 'desc', 'company']

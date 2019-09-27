@@ -3,19 +3,34 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, gps_conversion, one_net_register
-from .models import DevicesInfo
+from .models import DevicesInfo, CompanyModel
 from data_info.models import LocationInfo, DevicesOneNetInfo
 from .forms import DevicesInfoForm
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
 from datetime import datetime, timedelta
+from data_info.views import HttpResponseRedirect, reverse
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
 
     def get(self, request):
         # all_devices = DevicesInfo.objects.all()
-        all_devices = DevicesOneNetInfo.objects.all()
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_devices = DevicesOneNetInfo.objects.all()
+        else:
+            try:
+                company = request.user.company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company:
+                all_devices = DevicesOneNetInfo.objects.filter(imei__company__company_name=company)
+            else:
+                all_devices = ""
         create_history_record(request.user, '查询所有设备')
         return render(request, 'devices.html', {
             "all_devices": all_devices,
@@ -28,7 +43,20 @@ class DeviceAddView(LoginRequiredMixin, View):
     """
 
     def get(self, request):
-        return render(request, 'device_form_add.html', {})
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            company_id = CompanyModel.objects.all()
+            return render(request, 'device_form_add.html', {"company_id": company_id})
+        else:
+            try:
+                company_id = request.user.company.id
+            except Exception as e:
+                print(e)
+                return render(request, 'devices.html', {
+                    "all_devices": "",
+                })
+        return render(request, 'device_form_add.html', {"company_id": company_id})
 
     def post(self, request):
         # print(request.POST)
@@ -42,9 +70,10 @@ class DeviceAddView(LoginRequiredMixin, View):
                 create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
                 return JsonResponse({"status": "success"})
             return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
+        print(device_form.errors)
         return JsonResponse({
             "status": "fail",
-            "errors": "设备IMEI号唯一且必填"
+            "errors": "设备IMEI号和描述唯一且必填"
         })
 
 
@@ -111,7 +140,21 @@ class DeviceDelView(LoginRequiredMixin, View):
 class ShowMapView(View):
     def get(self, request):
         file = MEDIA_ROOT + '/all_devices_info.txt'
-        all_devices = DevicesInfo.objects.all()
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_devices = DevicesInfo.objects.all()
+        else:
+            try:
+                company = request.user.company.company_name
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company:
+                all_devices = DevicesInfo.objects.filter(company__company_name=company)
+            else:
+                all_devices = []
+        # all_devices = DevicesInfo.objects.all()
         # print(all_devices)
         f = open(file, 'w+', encoding='utf-8')
         for device in all_devices:
@@ -146,7 +189,21 @@ class ShowMapView(View):
 
     def post(self, request):
         # file = MEDIA_ROOT + '/all_devices_info.txt'
-        all_devices = DevicesInfo.objects.all()
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_devices = DevicesInfo.objects.all()
+        else:
+            try:
+                company = request.user.company.company_name
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company:
+                all_devices = DevicesInfo.objects.filter(company__company_name=company)
+            else:
+                all_devices = []
+        # all_devices = DevicesInfo.objects.all()
         # print(all_devices)
         # f = open(file, 'w+', encoding='utf-8')
         a = ""
@@ -198,6 +255,7 @@ class test11(LoginRequiredMixin, View):
                     status = "离线"
                 else:
                     status = "在线"
+                location_values['time'] = datetime.strftime(location_values['time'] + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
             else:
                 status = "离线"
             if location_values['longitude'] and location_values['latitude'] and location_values['speed']:
