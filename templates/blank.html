@@ -260,7 +260,7 @@
                             </h6>
                             <!-- bg-primary蓝色 bg-success绿色 bg-warning黄色 -->
                             {% for content in request.user.unread_contents %}
-                                <a class="dropdown-item d-flex align-items-center" href="">
+                                <a class="dropdown-item d-flex align-items-center" href="{% url 'message' %}">
                                     <div class="mr-3">
                                         <div {% if content.m_type == 1 %}class="icon-circle bg-success"
                                              {% elif content.m_type == 0 %}class="icon-circle bg-primary"
@@ -277,7 +277,7 @@
                                 </a>
                             {% endfor %}
                             <a class="dropdown-item text-center small text-gray-500"
-                               href="">查看全部消息</a>
+                               href="{% url 'message' %}">查看全部消息</a>
                         </div>
                     </li>
 
