@@ -11,7 +11,7 @@ class DevicesOneNetInfo(models.Model):
 # 原始数据
 class LocationInfo(models.Model):
     imei = models.ForeignKey(DevicesInfo, verbose_name='设备号')
-    time = models.DateTimeField(verbose_name='采集时间', unique=True)
+    time = models.DateTimeField(verbose_name='采集时间')
     up_time = models.DateTimeField(verbose_name='上传时间')
     get_time = models.DateTimeField(verbose_name='收到时间', auto_now_add=True)
     longitude = models.CharField(max_length=30, verbose_name='经度')
@@ -29,6 +29,8 @@ class LocationInfo(models.Model):
     class Meta:
         verbose_name = "原始数据信息表"
         verbose_name_plural = verbose_name
+        unique_together = ('time', 'longitude', 'latitude')
+
 
 
 class TXT(models.Model):
