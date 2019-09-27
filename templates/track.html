@@ -59,11 +59,14 @@
         zoom: 3
     });
 
+    var url = window.location.host;
+    console.log("http://" + url +"/media/image/ship.png");
+
     marker = new AMap.Marker({
         map: map,
         position: {{s_e_point|safe}},
         {#icon: "https://webapi.amap.com/images/car.png",#}
-        icon: "http://111.230.246.188:8088/media/image/ship.png",
+        icon: "http://" + url +"/media/image/ship.png",
         offset: new AMap.Pixel(-36, -10),
         autoRotation: true,
         angle:-90
