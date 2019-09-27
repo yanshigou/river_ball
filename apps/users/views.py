@@ -22,7 +22,7 @@ class RegisterView2(LoginRequiredMixin, View):
             # return HttpResponseRedirect(reverse("login"))
             return render(request, 'register2.html', {'msg': '请先登录确认权限后再注册其他账号'})
         user = UserProfile.objects.get(username=username)
-        print(user.permission)
+        # print(user.permission)
         if user.permission == 'superadmin':
             return render(request, 'register2.html', {
                 'register_form': register_form,
@@ -42,7 +42,7 @@ class RegisterView2(LoginRequiredMixin, View):
     def post(self, request):
         username = request.user.username
         user = UserProfile.objects.get(username=username)
-        print(user.permission)
+        # print(user.permission)
         if (user.permission != "superadmin") and (user.permission != "admin"):
             return JsonResponse({
                 'status': "fail",
@@ -51,7 +51,7 @@ class RegisterView2(LoginRequiredMixin, View):
         password = request.POST.get('password', '')
         if password == "":
             password = '123456'
-        print(password)
+        # print(password)
         permission = request.POST.get('permission', 'user')
         username = request.POST.get('username', '')
         if not username or UserProfile.objects.filter(username=username):
@@ -94,7 +94,7 @@ class RegisterView2(LoginRequiredMixin, View):
 class LoginView(View):
 
     def get(self, request):
-        print(request.COOKIES)
+        # print(request.COOKIES)
         if 'username' in request.COOKIES:
             # 获取记住的用户名
             username = request.COOKIES['username']
@@ -113,7 +113,7 @@ class LoginView(View):
             user_name = request.POST.get('username', '')
             pass_word = request.POST.get('password', '')
             remember = request.POST.get('remember', '')
-            print(remember)
+            # print(remember)
             user = authenticate(username=user_name, password=pass_word)
             if user is not None:
                 if user.is_active:
@@ -142,6 +142,8 @@ class AppLoginView(View):
             user_name = request.POST.get('username', '')
             pass_word = request.POST.get('password', '')
             user = authenticate(username=user_name, password=pass_word)
+            print(user_name)
+            print(pass_word)
             if user is not None:
                 if user.is_active:
                     login(request, user)
@@ -150,16 +152,14 @@ class AppLoginView(View):
                         "error_no": 0
                     })
                 else:
-                    print("用户未激活")
                     return JsonResponse({
                         "error_no": 3,
-                        "info": "用户未激活"
+                        "info": "not active"
                     })
             else:
-                print("用户名或密码错误")
                 return JsonResponse({
                     "error_no": 2,
-                    "info": "用户名或密码错误"
+                    "info": "username or password wrong"
                 })
         except Exception as e:
             print(e)
@@ -182,7 +182,7 @@ class ChangePassword(View):
             password1 = request.POST.get('password1', '')
             password2 = request.POST.get('password2', '')
             user = authenticate(username=request.user.username, password=old_password)
-            print(user)
+            # print(user)
             if not user:
                 return render(request, 'change_password.html', {'msg': '请先登录后，再修改密码'})
             if user is not None:
@@ -204,18 +204,15 @@ class AppChangePassword(View):
 
     def post(self, request):
         try:
+            username = request.POST.get('username', '')
             old_password = request.POST.get('old_password', '')
             password1 = request.POST.get('password1', '')
             password2 = request.POST.get('password2', '')
-            print(old_password)
-            print(password1)
-            print(password2)
-            user = authenticate(username=request.user.username, password=old_password)
-            print(user)
+            user = authenticate(username=username, password=old_password)
             if not user:
                 return JsonResponse({
                     "error_no": 1,
-                    "info": "请先登录后, 再修改密码"
+                    "info": "login first"
                 })
             if user is not None:
                 if password1 == password2:
@@ -229,12 +226,12 @@ class AppChangePassword(View):
                 else:
                     return JsonResponse({
                         "error_no": 1,
-                        "info": "两次密码不一致"
+                        "info": "password not same"
                     })
             else:
                 return JsonResponse({
                     "error_no": 1,
-                    "info": "原密码错误"
+                    "info": "password wrong"
                 })
         except Exception as e:
             print(e)
@@ -278,7 +275,7 @@ class LogoutView(View):
 
 class AppLogoutView(View):
     def get(self, request):
-        create_history_record(request.user, "退出登录")
+        # create_history_record(request.user, "退出登录")
         logout(request)
         # return HttpResponseRedirect(reverse("login"))
         # return HttpResponse('退出成功')
@@ -287,7 +284,7 @@ class AppLogoutView(View):
         })
 
 
-class Index(View):
+class Index(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'blank.html', {})
 
@@ -342,11 +339,11 @@ class DelUserView(LoginRequiredMixin, View):
     # 删除用户！
     def post(self, request):
         permission = request.user.permission
-        print(permission)
+        # print(permission)
         if permission != 'superadmin':
             return JsonResponse({"status": "fail", "quanxianbuzu": "对不起，您的权限不足！"})
         user_id = request.POST.get("user_id")
-        print(user_id)
+        # print(user_id)
         user = UserProfile.objects.get(id=user_id)
         username = user.username
         user.delete()
@@ -371,7 +368,7 @@ class ChangePermissionView(LoginRequiredMixin, View):
             return HttpResponseRedirect(reverse("user_info"))
 
         user = UserProfile.objects.get(id=user_id)
-        print(request.POST.get('permission'))
+        # print(request.POST.get('permission'))
         user.permission = request.POST.get('permission')
         user.save()
         username = user.username
@@ -417,7 +414,7 @@ class MessageView(View):
 
     def post(self, request):
         msg_id = request.POST.get('msg_id', '')
-        print(msg_id)
+        # print(msg_id)
         message = Message.objects.get(username_id=request.user.username, id=msg_id)
         message.has_read = True
         message.save()
