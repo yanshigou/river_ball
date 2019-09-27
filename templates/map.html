@@ -30,6 +30,11 @@
         zoom: 12, //初始化地图层级
         center: [106.509920533, 29.5143553667] //初始化地图中心点
     });
+
+    //just some colors
+    var colors = [
+        "red", "green", "white"
+    ];
     AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'],
         function (PointSimplifier, $) {
 
@@ -57,13 +62,44 @@
                     {#var speed = #}
                     var imei = s[2];
                     var speed = s[3];
-                    var data = "设备号:" + imei + '  速度m/s:' + speed;
+                    var online = s[4];
+                    var data = "设备号: " + imei + '  速度: ' + speed + ' m/s' + "  " + online;
+                    {#//获得pointStyle#}
+                    {#var renderOptions = pointSimplifierIns.getRenderOptions();#}
+                    {#var pointStyle = renderOptions.pointStyle;#}
+                    {#//修改pointStyle#}
+                    {#pointStyle.fillStyle = f;#}
+                    {##}
+                    {#//重新绘制#}
+                    {#pointSimplifierIns.render();#}
                     return data;
                 },
+                //使用GroupStyleRender
+                renderConstructor: PointSimplifier.Render.Canvas.GroupStyleRender,
                 renderOptions: {
                     //点的样式
+                    getGroupId: function (item, idx) {
+                        var s = item.split(',');
+                        var online = s[4];
+                        var f = 2;
+                        if (online === '在线') {
+                            f = 1
+                        } else {
+                            f = 0
+                        }
+                        {#console.log(f);#}
+                        return f;
+                    },
+                    groupStyleOptions: function (gid) {
+
+                        return {
+                            pointStyle: {
+                                fillStyle: colors[gid % colors.length]
+                            }
+                        };
+                    },
                     pointStyle: {
-                        fillStyle: 'red',
+                        fillStyle: 'white',
                         width: 15,
                         height: 24,
                         offset: ['-50%', '-100%'],
@@ -90,10 +126,11 @@
 
                         },
                     },
+
                     iconStyle: '//webapi.amap.com/theme/v1.3/markers/b/mark_r.png',
                     //鼠标hover时的title信息
                     hoverTitleStyle: {
-                        position: 'top'
+                        position: 'right'
                     }
                 }
             });
@@ -102,46 +139,29 @@
 
             $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
             var url = window.location.pathname;
-            console.log(url);
-
-            $.get('/media/all_devices_info.txt', function (csv) {
-
-                {#$.get('{% url "point" %}', function(csv) {#}
-
-                var data = csv.split('\n');
-                {#console.log(data);#}
-                pointSimplifierIns.setData(data);
-
-                $('#loadingTip').remove();
-            });
-            // 离线
-
-            //
 
             pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
-                //console.log(e.type, record);
-            });
+                            {#console.log(e.type, record);#}
+                        });
+
+
 
             function shuaxin() {
 
                 $.ajax({
                     method: 'POST',
                     url: url,
-                    success: function (data) {
-                        $.get('/media/all_devices_info.txt', function (csv) {
+                    success: function (csv) {
 
-                            {#$.get('{% url "point" %}', function(csv) {#}
 
-                            var data = csv.split('\n');
-                            {#console.log(data);#}
-                            pointSimplifierIns.setData(data);
 
-                            $('#loadingTip').remove();
-                        });
+                        var data = csv.str_data.split('\n');
+                        console.log(data);
+                        pointSimplifierIns.setData(data);
 
-                        pointSimplifierIns.on('pointClick pointMouseover pointMouseout', function (e, record) {
-                            //console.log(e.type, record);
-                        });
+                        $('#loadingTip').remove();
+
+
                     }
                 })
             }
