@@ -55,11 +55,18 @@
         <!-- Heading -->
 
         <!-- Nav Item - Pages Collapse Menu -->
-        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/locationInfo' in request.path or 'dataInfo/statistical' in request.path %}class="nav-item active table-active"
+        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/statistical' in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select_device' %}">
                 <i class="fas fa-fw fa-info"></i>
-                <span style="font-size: 20px">流速球监控</span>
+                <span style="font-size: 20px">监控</span>
+            </a>
+        </li>
+        <li {% if 'dataInfo/select2Device' in request.path  %}class="nav-item active table-active"
+            {% else %}class="nav-item"{% endif %}>
+            <a class="nav-link" href="{% url 'select2_device' %}">
+                <i class="fas fa-fw fa-tags"></i>
+                <span style="font-size: 20px">测量记录</span>
             </a>
         </li>
 {#        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"#}
@@ -108,7 +115,7 @@
         <!-- Heading -->
 
         <!-- Nav Item - Charts -->
-        <li {% if 'devices/info' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
+        <li {% if 'devices/info' in request.path or 'dataInfo/locationInfo' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'devices_info' %}">
                 <i class="fas fa-fw fa-baseball-ball"></i>
