@@ -1,0 +1,182 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    选择流速球
+{% endblock %}
+{% block topbar_title %}
+    选择流速球
+{% endblock %}
+{% block other_css %}
+    <!-- Custom styles for this page -->
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+    <style type="text/css">
+        input[type=checkbox] {
+            position: relative;
+            width: 10px;
+            height: 1px;
+        }
+
+        input[type=checkbox]::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 0;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            background-color: #999;
+            border-radius: 4px;
+        }
+
+        input[type=checkbox]:checked::before {
+            color: white;
+            background-color: forestgreen;
+            content: '√';
+        }
+    </style>
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+
+        <!-- Page Heading -->
+{#        <form action="" method="post" id="filterDataForm">#}
+{#            <p>#}
+{#                日期选项：#}
+{#                <input type="text" class="" id="date_time0" name="start_time"#}
+{#                       value="{{ start_time }}">#}
+{#                &nbsp;至 &nbsp;#}
+{#                <input type="text" class="" id="date_time1" name="end_time"#}
+{#                       value="{{ end_time }}">#}
+{#            </p>#}
+{#            <input type="hidden" value="{{ imei_id }}" name="imei_id">#}
+{#            <p id="all_button">#}
+{#                <a>#}
+{#                    <button type="submit" class="btn btn-success">轨迹回放</button>#}
+{#                </a>#}
+{#                <a>#}
+{#                    <button type="submit" class="btn btn-info">数据统计</button>#}
+{#                </a>#}
+{#                <a>#}
+{#                    <button type="button" class="btn btn-info">导出Excel表</button>#}
+{#                </a>#}
+{#                <a href="">#}
+{#                    <button type="button" class="btn btn-primary">重置</button>#}
+{#                </a>#}
+{#            </p>#}
+{##}
+{#            <p></p>#}
+{#            {% csrf_token %}#}
+
+            <!-- DataTales Example -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">所有设备</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>测量备注</th>
+                                <th>测量设备</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                {% if request.user.permission == "superadmin" %}
+                                    <th>所属公司</th>
+                                {% endif %}
+                                <th>操作</th>
+
+                            </tr>
+                            </thead>
+                            <tfoot>
+                            <tr>
+                                <th>测量备注</th>
+                                <th>测量设备</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
+                                {% if request.user.permission == "superadmin" %}
+                                    <th>所属公司</th>
+                                {% endif %}
+                                <th>操作</th>
+                            </tr>
+                            </tfoot>
+                            <tbody id="t_body">
+                            {% for record in all_test_record %}
+                                <tr>
+                                    <td>{{ record.remarks }}</td>
+                                    <td>{{ record.devices_id }}</td>
+                                    <td>{{ record.start_time }}</td>
+                                    <td>{{ record.end_time }}</td>
+                                    {% if request.user.permission == "superadmin" %}
+                                        <td>{{ record.remarks }}</td>
+                                    {% endif %}
+                                    <td>
+                                        {#                                        <input type="checkbox" value="{{ record.id }}" name="checkbox"/>#}
+                                        <a href="{% url 'location_info' record.id %}">
+                                            <button type="button" class="btn btn-primary" style="line-height: 1">数据查看
+                                            </button>
+                                        </a>
+                                        <a href="{% url 'track' record.id start_time end_time %}">
+                                            <button type="button" class="btn btn-success" style="line-height: 1">轨迹查看
+                                            </button>
+                                        </a>
+                                        <a href="{% url 'statistical' record.id %}">
+                                            <button type="button" class="btn btn-info" style="line-height: 1">数据统计
+                                            </button>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+{#        </form>#}
+
+    </div>
+{% endblock %}
+
+{% block other_js %}
+
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
+{#    <script>#}
+{#        //执行一个laydate实例#}
+{#        laydate.render({#}
+{#            elem: '#date_time0',#}
+{#            type: 'datetime'#}
+{#        });#}
+{#        laydate.render({#}
+{#            elem: '#date_time1',#}
+{#            type: 'datetime'#}
+{#        });#}
+{#    </script>#}
+{% endblock %}
