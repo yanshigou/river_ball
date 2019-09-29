@@ -4,7 +4,7 @@ from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import datetime, timedelta
 from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data, export_excel
-from .models import LocationInfo, TXT, DevicesOneNetInfo
+from .models import LocationInfo, TXT, DevicesOneNetInfo, TestRecord
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
 from .forms import TXTInfoForm, LocationInfoSerializer, DevicesInfoSerializer
@@ -37,6 +37,46 @@ class SelectDevice(LoginRequiredMixin, View):
                 all_devices = ""
         return render(request, 'select_device.html', {
             "all_devices": all_devices
+        })
+
+
+class Select2Device(LoginRequiredMixin, View):
+    def get(self, request):
+        permission = request.user.permission
+        print(permission)
+        now_time = datetime.now().replace(microsecond=0)
+        start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
+        if permission == 'superadmin':
+            all_test_record = TestRecord.objects.all()
+        else:
+            try:
+                company = request.user.company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return render(request, 'select2_device.html', {
+                    "all_devices": "",
+                    "start_time": start_time,
+                    "end_time": now_time
+                })
+            if company:
+                all_test_record = TestRecord.objects.filter(company__company_name=company)
+            else:
+                all_test_record = ""
+        return render(request, 'select2_device.html', {
+            "all_test_record": all_test_record,
+            "start_time": start_time,
+            "end_time": now_time
+        })
+
+    def post(self, request):
+        start_time = request.POST.get('start_time', '')
+        end_time = request.POST.get('end_time', '')
+        record_id = request.POST.getlist('checkbox', '')
+        print(start_time)
+        print(end_time)
+        return JsonResponse({
+            "error_no": 0
         })
 
 
@@ -74,7 +114,7 @@ class LocationInfoView(LoginRequiredMixin, View):
                 # print(company)
             except Exception as e:
                 print(e)
-                return HttpResponseRedirect(reverse('select_device'))
+                return HttpResponseRedirect(reverse('devices_info'))
             if company and device and device_company == company:
                 location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                              time__lte=end_time).order_by('-time')
@@ -108,139 +148,163 @@ class LocationInfoView(LoginRequiredMixin, View):
                     "end_time": now_time
                 })
             else:
-                return render(request, 'location_infos.html', {
-                    "imei_id": imei_id,
-                    "imei": "",
-                    "location_data": "",
-                    "start_time": start_time,
-                    "end_time": now_time
-                })
-
-        now_time = datetime.now().replace(microsecond=0)
-        start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
-        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-        end_time = now_time + timedelta(hours=-8)
-        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                     time__lte=end_time).order_by('-time')
-        if location_infos:
-            imei = location_infos[0].imei.imei
-            create_history_record(request.user, '查询设备号%s数据' % imei)
-            a = location_infos.values()
-            for i in a:
-                i['imei'] = imei
-                if i['time']:
-                    i['time'] = i['time'] + timedelta(hours=8)
-                if i['speed']:
-                    i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
-                if i['longitude'] and i['latitude']:
-                    i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
-                if i['power'] and len(i['power']) > 4:
-                    i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
-            # print(a)
-            return render(request, 'location_infos.html', {
-                "imei_id": imei_id,
-                "imei": imei,
-                "location_data": a,
-                "start_time": start_time,
-                "end_time": now_time
-            })
-        return render(request, 'location_infos.html', {
-            "imei_id": imei_id,
-            "imei": "",
-            "location_data": location_infos,
-            "start_time": start_time,
-            "end_time": now_time
-        })
-
-    def post(self, request, imei_id):
-        start_time = request.POST.get('start_time', '')
-        end_time = request.POST.get('end_time', '')
-        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-        end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                     time__lte=end_time2).order_by('-time')
-        if location_infos:
-            imei = location_infos[0].imei.imei
-            create_history_record(request.user, '查询设备号%s数据' % location_infos[0].imei.imei)
-            a = location_infos.values()
-            for i in a:
-                i['imei'] = imei
-                if i['time']:
-                    i['time'] = i['time'] + timedelta(hours=8)
-                if i['speed']:
-                    i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
-                if i['longitude'] and i['latitude']:
-                    i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
-                if i['power'] and len(i['power']) > 4:
-                    i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
-            # print(a)
-            return render(request, 'location_infos.html', {
-                "imei_id": imei_id,
-                "imei": imei,
-                "location_data": a,
-                "start_time": start_time,
-                "end_time": end_time
-            })
-        return render(request, 'location_infos.html', {
-            "imei_id": imei_id,
-            "imei": "",
-            "location_data": location_infos,
-            "start_time": start_time,
-            "end_time": end_time
-        })
-
-
-class AppLocationInfoView(View):
-    def post(self, request):
-        # try:
-            start_time = request.POST.get('start_time', '')
-            end_time = request.POST.get('end_time', '')
-            imei_id = request.POST.get('imei_id', '')
-            username = request.POST.get('username', '')
-            start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-            end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+                return HttpResponseRedirect(reverse('devices_info'))
+        else:
             location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                         time__lte=end_time2).order_by('-time')
-            page = request.POST.get('page', '1')
-            print(page)
-            paginator = Paginator(location_infos, 20)
-            try:
-                location_info_page = paginator.page(page)
-            except PageNotAnInteger:
-                location_info_page = paginator.page(1)
-            except EmptyPage:
-                location_info_page = paginator.page(paginator.num_pages)
-            if location_info_page:
+                                                         time__lte=end_time).order_by('-time')
+            if location_infos:
                 imei = location_infos[0].imei.imei
-                create_history_record(username, 'app查询设备号%s数据' % imei)
-                a = LocationInfoSerializer(location_info_page, many=True).data
+                create_history_record(request.user, '查询设备号%s数据' % imei)
+                a = location_infos.values()
                 for i in a:
                     i['imei'] = imei
                     if i['time']:
-                        i['time'] = datetime.strftime(
-                            datetime.strptime(i['time'], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                        i['time'] = i['time'] + timedelta(hours=8)
                     if i['speed']:
                         i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
                     if i['longitude'] and i['latitude']:
                         i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
                     if i['power'] and len(i['power']) > 4:
                         i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
-                data = {
+                # print(a)
+                return render(request, 'location_infos.html', {
                     "imei_id": imei_id,
                     "imei": imei,
                     "location_data": a,
                     "start_time": start_time,
-                    "end_time": end_time,
-                    "total": paginator.num_pages
-                }
-                return JsonResponse({
-                    "error_no": 0,
-                    "data": data
+                    "end_time": now_time
                 })
-            data = {
+            return render(request, 'location_infos.html', {
                 "imei_id": imei_id,
                 "imei": "",
-                "location_data": LocationInfoSerializer(location_infos, many=True).data,
+                "location_data": location_infos,
+                "start_time": start_time,
+                "end_time": now_time
+            })
+
+    def post(self, request, imei_id):
+        start_time = request.POST.get('start_time', '')
+        end_time = request.POST.get('end_time', '')
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        permission = request.user.permission
+        print(permission)
+        if permission != 'superadmin':
+            device = DevicesInfo.objects.filter(id=imei_id)
+            try:
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company and device and device_company == company:
+                location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                             time__lte=end_time2).order_by('-time')
+                if location_infos:
+                    imei = location_infos[0].imei.imei
+                    create_history_record(request.user, '查询设备号%s数据' % location_infos[0].imei.imei)
+                    a = location_infos.values()
+                    for i in a:
+                        i['imei'] = imei
+                        if i['time']:
+                            i['time'] = i['time'] + timedelta(hours=8)
+                        if i['speed']:
+                            i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                        if i['longitude'] and i['latitude']:
+                            i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                        if i['power'] and len(i['power']) > 4:
+                            i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+                    # print(a)
+                    return render(request, 'location_infos.html', {
+                        "imei_id": imei_id,
+                        "imei": imei,
+                        "location_data": a,
+                        "start_time": start_time,
+                        "end_time": end_time
+                    })
+                return render(request, 'location_infos.html', {
+                    "imei_id": imei_id,
+                    "imei": "",
+                    "location_data": location_infos,
+                    "start_time": start_time,
+                    "end_time": end_time
+                })
+            else:
+                return HttpResponseRedirect(reverse('devices_info'))
+        else:
+            location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                         time__lte=end_time2).order_by('-time')
+            if location_infos:
+                imei = location_infos[0].imei.imei
+                create_history_record(request.user, '查询设备号%s数据' % location_infos[0].imei.imei)
+                a = location_infos.values()
+                for i in a:
+                    i['imei'] = imei
+                    if i['time']:
+                        i['time'] = i['time'] + timedelta(hours=8)
+                    if i['speed']:
+                        i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                    if i['longitude'] and i['latitude']:
+                        i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                    if i['power'] and len(i['power']) > 4:
+                        i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+                # print(a)
+                return render(request, 'location_infos.html', {
+                    "imei_id": imei_id,
+                    "imei": imei,
+                    "location_data": a,
+                    "start_time": start_time,
+                    "end_time": end_time
+                })
+            return render(request, 'location_infos.html', {
+                "imei_id": imei_id,
+                "imei": "",
+                "location_data": location_infos,
+                "start_time": start_time,
+                "end_time": end_time
+            })
+
+
+class AppLocationInfoView(View):
+    def post(self, request):
+        # try:
+        start_time = request.POST.get('start_time', '')
+        end_time = request.POST.get('end_time', '')
+        imei_id = request.POST.get('imei_id', '')
+        username = request.POST.get('username', '')
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                     time__lte=end_time2).order_by('-time')
+        page = request.POST.get('page', '1')
+        print(page)
+        paginator = Paginator(location_infos, 20)
+        try:
+            location_info_page = paginator.page(page)
+        except PageNotAnInteger:
+            location_info_page = paginator.page(1)
+        except EmptyPage:
+            location_info_page = paginator.page(paginator.num_pages)
+        if location_info_page:
+            imei = location_infos[0].imei.imei
+            create_history_record(username, 'app查询设备号%s数据' % imei)
+            a = LocationInfoSerializer(location_info_page, many=True).data
+            for i in a:
+                i['imei'] = imei
+                if i['time']:
+                    i['time'] = datetime.strftime(
+                        datetime.strptime(i['time'], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                if i['speed']:
+                    i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
+                if i['longitude'] and i['latitude']:
+                    i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                if i['power'] and len(i['power']) > 4:
+                    i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
+            data = {
+                "imei_id": imei_id,
+                "imei": imei,
+                "location_data": a,
                 "start_time": start_time,
                 "end_time": end_time,
                 "total": paginator.num_pages
@@ -249,12 +313,24 @@ class AppLocationInfoView(View):
                 "error_no": 0,
                 "data": data
             })
-        # except Exception as e:
-        #     print(e)
-        #     return JsonResponse({
-        #         "error_no": -1,
-        #         "info": str(e)
-        #     })
+        data = {
+            "imei_id": imei_id,
+            "imei": "",
+            "location_data": LocationInfoSerializer(location_infos, many=True).data,
+            "start_time": start_time,
+            "end_time": end_time,
+            "total": paginator.num_pages
+        }
+        return JsonResponse({
+            "error_no": 0,
+            "data": data
+        })
+    # except Exception as e:
+    #     print(e)
+    #     return JsonResponse({
+    #         "error_no": -1,
+    #         "info": str(e)
+    #     })
 
 
 class ExportLocationInfoView(View):
@@ -422,31 +498,74 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
         end_time = now_time + timedelta(hours=-8)
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time).order_by(
-            'time')
-        deivce = DevicesInfo.objects.filter(id=imei_id)
-        if deivce:
-            imei = deivce[0].imei
+        permission = request.user.permission
+        print(permission)
+        if permission != 'superadmin':
+            device = DevicesInfo.objects.filter(id=imei_id)
+            try:
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select_device'))
+            print(device_company)
+            print(company)
+            if company and device and device_company == company:
+                location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                       time__lte=end_time).order_by(
+                    'time')
+                deivce = DevicesInfo.objects.filter(id=imei_id)
+                if deivce:
+                    imei = deivce[0].imei
+                else:
+                    imei = ""
+                for i in location:
+                    time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+                    # time_list.append("")
+                    # print(i.speed) float('%0.2f' % (float(i['speed']) * 0.5144444))
+                    speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
+                create_history_record(request.user, '查看图形统计')
+                return render(request, 'statistical_one.html', {
+                    "imei": imei,
+                    # "district": district,
+                    # "all_wt_datas": all_wt_datas,
+                    "time_list": time_list,
+                    "speed_list": speed_list,
+                    # "all_address_count2": all_address_count2,
+                    # "all_address_count3": all_address_count3,
+                    # "all_address_count4": all_address_count4,
+                    "start_time": start_time,
+                    "end_time": now_time
+                })
+            else:
+                return HttpResponseRedirect(reverse('select_device'))
         else:
-            imei = ""
-        for i in location:
-            time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
-            # time_list.append("")
-            # print(i.speed) float('%0.2f' % (float(i['speed']) * 0.5144444))
-            speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
-        create_history_record(request.user, '查看图形统计')
-        return render(request, 'statistical_one.html', {
-            "imei": imei,
-            # "district": district,
-            # "all_wt_datas": all_wt_datas,
-            "time_list": time_list,
-            "speed_list": speed_list,
-            # "all_address_count2": all_address_count2,
-            # "all_address_count3": all_address_count3,
-            # "all_address_count4": all_address_count4,
-            "start_time": start_time,
-            "end_time": now_time
-        })
+            location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time).order_by(
+                'time')
+            deivce = DevicesInfo.objects.filter(id=imei_id)
+            if deivce:
+                imei = deivce[0].imei
+            else:
+                imei = ""
+            for i in location:
+                time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+                # time_list.append("")
+                # print(i.speed) float('%0.2f' % (float(i['speed']) * 0.5144444))
+                speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
+            create_history_record(request.user, '查看图形统计')
+            return render(request, 'statistical_one.html', {
+                "imei": imei,
+                # "district": district,
+                # "all_wt_datas": all_wt_datas,
+                "time_list": time_list,
+                "speed_list": speed_list,
+                # "all_address_count2": all_address_count2,
+                # "all_address_count3": all_address_count3,
+                # "all_address_count4": all_address_count4,
+                "start_time": start_time,
+                "end_time": now_time
+            })
 
     def post(self, request, imei_id):
         time_list = list()
@@ -455,31 +574,76 @@ class StatisticalToOneView(LoginRequiredMixin, View):
         start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
         end_time = request.POST.get('end_time', '')
         end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time2).order_by(
-            'time')
-        deivce = DevicesInfo.objects.filter(id=imei_id)
-        if deivce:
-            imei = deivce[0].imei
+
+        permission = request.user.permission
+        print(permission)
+        if permission != 'superadmin':
+            device = DevicesInfo.objects.filter(id=imei_id)
+            try:
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select_device'))
+            print(device_company)
+            print(company)
+            if company and device and device_company == company:
+                location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                       time__lte=end_time2).order_by(
+                    'time')
+                deivce = DevicesInfo.objects.filter(id=imei_id)
+                if deivce:
+                    imei = deivce[0].imei
+                else:
+                    imei = ""
+                for i in location:
+                    time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+                    speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
+                # print(time_list)
+                # print(speed_list)
+                create_history_record(request.user, '查看图形统计')
+                return render(request, 'statistical_one.html', {
+                    "imei": imei,
+                    # "district": district,
+                    # "all_wt_datas": all_wt_datas,
+                    "time_list": time_list,
+                    "speed_list": speed_list,
+                    # "all_address_count2": all_address_count2,
+                    # "all_address_count3": all_address_count3,
+                    # "all_address_count4": all_address_count4,
+                    "start_time": start_time,
+                    "end_time": end_time
+                })
+            else:
+                return HttpResponseRedirect(reverse('select_device'))
         else:
-            imei = ""
-        for i in location:
-            time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
-            speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
-        # print(time_list)
-        # print(speed_list)
-        create_history_record(request.user, '查看图形统计')
-        return render(request, 'statistical_one.html', {
-            "imei": imei,
-            # "district": district,
-            # "all_wt_datas": all_wt_datas,
-            "time_list": time_list,
-            "speed_list": speed_list,
-            # "all_address_count2": all_address_count2,
-            # "all_address_count3": all_address_count3,
-            # "all_address_count4": all_address_count4,
-            "start_time": start_time,
-            "end_time": end_time
-        })
+            location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                   time__lte=end_time2).order_by(
+                'time')
+            deivce = DevicesInfo.objects.filter(id=imei_id)
+            if deivce:
+                imei = deivce[0].imei
+            else:
+                imei = ""
+            for i in location:
+                time_list.append(datetime.strftime(i.time + timedelta(hours=8), '%Y%m%d %H:%M:%S'))
+                speed_list.append(float('%0.2f' % (float(i.speed) * 0.5144444)))
+            # print(time_list)
+            # print(speed_list)
+            create_history_record(request.user, '查看图形统计')
+            return render(request, 'statistical_one.html', {
+                "imei": imei,
+                # "district": district,
+                # "all_wt_datas": all_wt_datas,
+                "time_list": time_list,
+                "speed_list": speed_list,
+                # "all_address_count2": all_address_count2,
+                # "all_address_count3": all_address_count3,
+                # "all_address_count4": all_address_count4,
+                "start_time": start_time,
+                "end_time": end_time
+            })
 
 
 class LocationTrackView(LoginRequiredMixin, View):

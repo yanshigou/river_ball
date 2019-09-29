@@ -3,10 +3,12 @@ __author__ = "dzt"
 __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import LocationInfoView, SelectDevice, UploadLocationInfoView, StatisticalToOneView, LocationTrackView
-from .views import ShowTXTView, OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView
+from .views import ShowTXTView, OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
+    Select2Device
 
 urlpatterns = [
     url(r'^selectDevice/$', SelectDevice.as_view(), name='select_device'),
+    url(r'^select2Device/$', Select2Device.as_view(), name='select2_device'),
     url(r'^appSelectDevice/$', AppSelectDevice.as_view()),
     url(r'^locationInfo/(?P<imei_id>\d+)/$', LocationInfoView.as_view(), name='location_info'),
     url(r'^ExportLocationInfo/$', ExportLocationInfoView.as_view(), name='export_location_info'),
