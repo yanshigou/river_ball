@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from devices.models import DevicesInfo
+from devices.models import DevicesInfo, CompanyModel
 
 
 class DevicesOneNetInfo(models.Model):
@@ -36,3 +36,11 @@ class TXT(models.Model):
     info = models.CharField(max_length=30, verbose_name='备注', default='')
     filename = models.FileField(upload_to='txt', verbose_name='文件名')
     starttime = models.DateTimeField(null=True, blank=True, verbose_name='上传时间')
+
+
+class TestRecord(models.Model):
+    start_time = models.DateTimeField(verbose_name='开始时间')
+    end_time = models.DateTimeField(verbose_name='结束时间')
+    devices_id = models.CharField(max_length=200, verbose_name="测量组ID")
+    remarks = models.CharField(max_length=200, verbose_name="备注")
+    company = models.ForeignKey(CompanyModel, verbose_name='所属公司', null=True, blank=True)
