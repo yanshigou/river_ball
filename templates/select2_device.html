@@ -126,11 +126,11 @@
                                     <td>{{ record.start_time }}</td>
                                     <td>{{ record.end_time }}</td>
                                     {% if request.user.permission == "superadmin" %}
-                                        <td>{{ record.remarks }}</td>
+                                        <td>{{ record.company.company_name }}</td>
                                     {% endif %}
                                     <td>
                                         {#                                        <input type="checkbox" value="{{ record.id }}" name="checkbox"/>#}
-                                        <a href="{% url 'location_info' record.id %}">
+                                        <a href="{% url 'record_location_info' record.id %}">
                                             <button type="button" class="btn btn-primary" style="line-height: 1">数据查看
                                             </button>
                                         </a>
