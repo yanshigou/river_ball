@@ -5,11 +5,12 @@ from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, gps_conversion, one_net_register
 from .models import DevicesInfo, CompanyModel
 from data_info.models import LocationInfo, DevicesOneNetInfo
-from .forms import DevicesInfoForm
+from .forms import DevicesInfoForm, DeviceActiveForm
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
 from datetime import datetime, timedelta
 from data_info.views import HttpResponseRedirect, reverse
+from users.models import UserProfile
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
@@ -83,10 +84,24 @@ class DeviceView(LoginRequiredMixin, View):
     """
 
     def get(self, request, device_id):
-        device_info = DevicesInfo.objects.get(id=device_id)
-        return render(request, "device_view.html", {
-            "device_info": device_info
-        })
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            device_info = DevicesInfo.objects.get(id=device_id)
+            return render(request, "device_view.html", {
+                "device_info": device_info
+            })
+        else:
+            try:
+                company_id = request.user.company.id
+                device_info = DevicesInfo.objects.get(id=device_id, company_id=company_id)
+                print(device_info)
+                return render(request, "device_view.html", {
+                    "device_info": device_info
+                })
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
 
 
 class DeviceModifyView(LoginRequiredMixin, View):
@@ -95,10 +110,23 @@ class DeviceModifyView(LoginRequiredMixin, View):
     """
 
     def get(self, request, device_id):
-        device_info = DevicesInfo.objects.filter(id=device_id)[0]
-        return render(request, "device_form_modify.html", {
-            "device_info": device_info,
-        })
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            device_info = DevicesInfo.objects.filter(id=device_id)[0]
+            return render(request, "device_form_modify.html", {
+                "device_info": device_info,
+            })
+        else:
+            try:
+                company_id = request.user.company.id
+                device_info = DevicesInfo.objects.filter(id=device_id, company_id=company_id)[0]
+                return render(request, "device_form_modify.html", {
+                    "device_info": device_info,
+                })
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
 
     def post(self, request, device_id):
         deviceinfo = DevicesInfo.objects.get(id=device_id)
@@ -255,13 +283,15 @@ class test11(LoginRequiredMixin, View):
                     status = "离线"
                 else:
                     status = "在线"
-                location_values['time'] = datetime.strftime(location_values['time'] + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                location_values['time'] = datetime.strftime(location_values['time'] + timedelta(hours=8),
+                                                            "%Y-%m-%d %H:%M:%S")
             else:
                 status = "离线"
             if location_values['longitude'] and location_values['latitude'] and location_values['speed']:
                 location_values['speed'] = float('%0.2f' % (float(location_values['speed']) * 0.5144444))
                 # print(speed)
-                location_values['longitude'], location_values['latitude'] = gps_conversion(location_values['longitude'], location_values['latitude'])
+                location_values['longitude'], location_values['latitude'] = gps_conversion(location_values['longitude'],
+                                                                                           location_values['latitude'])
             # print(location_values)
             data.append(location_values)
         # print(data)
@@ -292,6 +322,7 @@ class AppLastLocation(View):
                 desc = location.imei.desc
                 speed = location.speed
                 time = location.time
+                cj_time = location.imei.time
                 if speed:
                     speed = float('%0.2f' % (float(speed) * 0.5144444))
                 if time:
@@ -313,7 +344,8 @@ class AppLastLocation(View):
                         "desc": desc,
                         "speed": speed,
                         "time": time,
-                        "status": status
+                        "status": status,
+                        "create_time": cj_time
                     }
                     data_list.append(data)
             return JsonResponse({
@@ -326,3 +358,167 @@ class AppLastLocation(View):
                 "error_no": -1,
                 "info": str(e)
             })
+
+
+class AppCompanyView(View):
+    def get(self, request):
+        try:
+            username = request.GET.get('username')
+            user = UserProfile.objects.get(username=username)
+        except Exception as e:
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+        permission = user.permission
+        print(permission)
+        if permission == 'superadmin':
+            company_id = CompanyModel.objects.all()
+            company_data = list()
+            for i in company_id:
+                company_data.append({"company_name": i.company_name, "company_id": i.id})
+            print(company_data)
+            return JsonResponse({
+                "error_no": 0,
+                "company": company_data,
+                "is_super": 1
+            })
+        else:
+            try:
+                company_id = user.company.id
+                company_name = user.company.company_name
+            except Exception as e:
+                print(e)
+                return JsonResponse({
+                    "error_no": -1,
+                    "info": str(e)
+                })
+        return JsonResponse({
+            "error_no": 0,
+            "company": [{"company_name": company_name, "company_id": company_id}],
+            "is_super": 0
+        })
+
+
+class AppPermissionView(View):
+    def post(self, request):
+        try:
+            username = request.POST.get('username')
+            user = UserProfile.objects.get(username=username)
+        except Exception as e:
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+        permission = user.permission
+        print(permission)
+        return JsonResponse({
+                "error_no": 0,
+                "permission": permission
+            })
+
+
+class AppDeviceAddView(View):
+    def post(self, request):
+        print(request.POST)
+        try:
+            username = request.POST.get('username')
+            device_form = DevicesInfoForm(request.POST)
+            if device_form.is_valid():
+                device_form.save()
+                imei, dev_id = one_net_register(request.POST.get('imei'))
+                imei_id = DevicesInfo.objects.get(imei=imei).id
+                if imei and dev_id:
+                    DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
+                    create_history_record(username, 'app新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
+                    return JsonResponse({
+                        "error_no": 0
+                    })
+                return JsonResponse({
+                    "error_no": 4,
+                    "info": "OneNet error, delete that"
+                })
+            print(device_form.errors)
+            return JsonResponse({
+                "status": "1",
+                "errors": "imei desc must be unique"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class AppDeviceDelView(View):
+    def post(self, request):
+        try:
+            username = request.POST.get('username')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            print(permission)
+            if permission == 'superadmin':
+                device_id = request.POST.get('device_id', "")
+                device = DevicesInfo.objects.filter(id=device_id)
+                infos = LocationInfo.objects.filter(imei_id=device_id)
+                if infos:
+                    return JsonResponse({
+                        "error_no": 2,
+                        "info": "This device has data"
+                    })
+                device_imei = device[0].imei
+                device.delete()
+                create_history_record(username, '删除设备 %s' % device_imei)
+                return JsonResponse({
+                    "error_no": 0
+                })
+            else:
+                try:
+                    company_id = user.company.id
+                    device_id = request.POST.get('device_id', "")
+                    device = DevicesInfo.objects.get(id=device_id, company_id=company_id)
+                    infos = LocationInfo.objects.filter(imei_id=device_id)
+                    if infos:
+                        return JsonResponse({
+                            "error_no": 2,
+                            "info": "This device has data"
+                        })
+                    device.delete()
+                    device_imei = device.imei
+                    create_history_record(username, '删除设备 %s' % device_imei)
+                    return JsonResponse({
+                        "error_no": 0
+                    })
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        "error_no": -1,
+                        "info": str(e)
+                    })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class DeviceActiveView(LoginRequiredMixin, View):
+    # 设备启用\停用
+    def post(self, request):
+        device_id = request.POST.get('id', '')
+        is_active = request.POST.get('is_active')
+        if is_active == 'true':
+            status = '启用成功！'
+        else:
+            status = '停用成功！'
+        if device_id != '':
+            device_status = DevicesInfo.objects.get(id=device_id)
+            status_form = DeviceActiveForm(request.POST, instance=device_status)
+            if status_form.is_valid():
+                status_form.save()
+                create_history_record(request.user, '%s 设备 %s' % (status, device_status.imei))
+                return JsonResponse({"status": status})
+
+        return JsonResponse({"status": status})
