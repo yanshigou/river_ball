@@ -9,3 +9,9 @@ class DevicesInfoForm(forms.ModelForm):
     class Meta:
         model = DevicesInfo
         fields = ["imei", 'desc', 'company']
+
+
+class DeviceActiveForm(forms.ModelForm):
+    class Meta:
+        model = DevicesInfo
+        fields = ["is_active"]

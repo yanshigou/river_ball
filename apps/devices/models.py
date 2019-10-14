@@ -9,6 +9,11 @@ class DevicesInfo(models.Model):
     imei = models.CharField(max_length=20, verbose_name='设备号', unique=True)
     desc = models.CharField(max_length=100, verbose_name='描述', unique=True)
     company = models.ForeignKey(CompanyModel, verbose_name='所属公司')
+    time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
+    is_active = models.BooleanField(default=True, verbose_name="是否启用")
+
+    class Meta:
+        unique_together = ('imei', 'desc')
 
 
 class DeviceSettingsInfo(models.Model):
