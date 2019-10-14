@@ -7,6 +7,7 @@ import requests
 import pynmea2
 import json
 import xlsxwriter
+from devices.models import DevicesInfo
 
 
 # 操作记录
@@ -23,6 +24,16 @@ def create_history_record(user, content, r_type=True):
 def make_message(username, content, m_type):
     Message.objects.create(username_id=username, content=content, m_type=m_type)
     return True
+
+
+# 启用状态
+def device_is_active(imei_id):
+    device_info = DevicesInfo.objects.filter(id=imei_id).values()
+    if device_info:
+        is_active = device_info[0]['is_active']
+    else:
+        is_active = False
+    return is_active
 
 
 # 坐标转换
