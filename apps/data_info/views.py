@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import datetime, timedelta
-from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data, export_excel
+from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data, export_excel, device_is_active
 from .models import LocationInfo, TXT, DevicesOneNetInfo, TestRecord
 from users.models import UserProfile
 from devices.models import DevicesInfo
@@ -14,6 +14,7 @@ from django.core.urlresolvers import reverse
 from river_ball.settings import MEDIA_ROOT
 import os
 import re
+from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
@@ -290,7 +291,9 @@ class RecordLocationInfoView(LoginRequiredMixin, View):
                 imei_id_list = devices_id.split(',')
                 print(imei_id_list)
                 a_list = list()
+                a_list2 = list()
                 desc_list = list()
+                info_list = list()
                 for imei_id in imei_id_list:
                     location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
                                                                  time__lte=end_time2).order_by('-time')
@@ -309,7 +312,8 @@ class RecordLocationInfoView(LoginRequiredMixin, View):
                                 info_dict['speed'] = float('%0.2f' % (float(i.speed) * 0.5144444))
                             a_list.append(info_dict)
                     # TODO 与 info_dict一把 把数据重新拿出来组装
-                    print('a_list', a_list)
+                    # print('a_list', a_list)
+
                 return render(request, 'record_location_infos.html', {
                     "a_list": a_list,
                     "desc_list": desc_list
@@ -514,6 +518,9 @@ class OneNetDataView(APIView):
             one_net = DevicesOneNetInfo.objects.filter(dev_id=dev_id)
             if one_net:
                 imei_id = one_net[0].imei.id
+                if not device_is_active(imei_id):
+                    return JsonResponse({"status": "error", "error": 'device is_active False'})
+
             else:
                 return JsonResponse({"status": "error", "error": 'device not exist'})
             user_id = current_data.get('user_id')
@@ -866,17 +873,18 @@ class DelFile(LoginRequiredMixin, View):
             return JsonResponse({"status": "fail", 'msg': "删除失败"})
 
 
-class AppTestRecordView(View):
+class AppStartTestRecordView(View):
     def post(self, request):
         try:
             start_time = request.POST.get('start_time', '')
-            end_time = request.POST.get('end_time', '')
             devices_id = request.POST.get('devices_id', '')
             remarks = request.POST.get('remarks', '')
             username = request.POST.get('username', '')
-            company_id = UserProfile.objects.get(username=username).company_id
-            TestRecord.objects.create(start_time=start_time, end_time=end_time, devices_id=devices_id, remarks=remarks,
-                                      company_id=company_id)
+            wind = request.POST.get('wind', '')
+            warning_speed = request.POST.get('warning_speed', '')
+            company_id = request.POST.get('company_id', '')
+            TestRecord.objects.create(start_time=start_time, devices_id=devices_id, remarks=remarks,
+                                      company_id=company_id, wind=wind, warning_speed=warning_speed)
             return JsonResponse({
                 "error_no": 0
             })
@@ -886,3 +894,125 @@ class AppTestRecordView(View):
                 "error_no": -1,
                 "info": str(e)
             })
+
+
+class AppEndTestRecordView(View):
+    def post(self, request):
+        try:
+            username = request.POST.get('username')
+            record_id = request.POST.get('record_id')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            print(permission)
+            if permission == 'superadmin':
+                record = TestRecord.objects.get(id=record_id)
+                record.end_time = datetime.now()
+                record.save()
+            else:
+                try:
+                    company_id = user.company.id
+                    record = TestRecord.objects.get(id=record_id, company_id=company_id)
+                    record.end_time = datetime.now()
+                    record.save()
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        "error_no": -1,
+                        "info": str(e)
+                    })
+
+            return JsonResponse({
+                "error_no": 0
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class AppTestRecordView(View):
+    def post(self, request):
+        try:
+            username = request.POST.get('username')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            print(permission)
+            start_time = request.POST.get('start_time')
+            end_time = request.POST.get('end_time')
+            if permission == 'superadmin':
+                all_test_record = TestRecord.objects.filter(start_time__gte=start_time, start_time__lte=end_time)
+                record_list = list()
+                if all_test_record:
+                    for record in all_test_record:
+                        devices_id_list = record.devices_id.split(',')
+                        desc_list = list()
+                        for i in devices_id_list:
+                            desc = DevicesInfo.objects.get(id=i).desc
+                            desc_list.append(desc)
+                        data = {
+                            "recode_id": record.id,
+                            "remarks": record.remarks,
+                            "devices_id": ','.join(desc_list),
+                            "start_time": record.start_time,
+                            "end_time": record.end_time,
+                            "wind": record.wind,
+                            "warning_speed": record.warning_speed,
+                            "company": record.company.company_name
+                        }
+                        record_list.append(data)
+                    print(record_list)
+                return JsonResponse({
+                    "error_no": 0,
+                    "all_test_record": record_list,
+                    "start_time": start_time,
+                    "end_time": end_time
+                })
+            else:
+                try:
+                    company = user.company.company_name
+                    # print(company)
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        "error_no": -1,
+                        "info": str(e)
+                    })
+                if company:
+                    all_test_record = TestRecord.objects.filter(company__company_name=company)
+                    record_list = list()
+                    if all_test_record:
+                        for record in all_test_record:
+                            devices_id_list = record.devices_id.split(',')
+                            desc_list = list()
+                            for i in devices_id_list:
+                                desc = DevicesInfo.objects.get(id=i).desc
+                                desc_list.append(desc)
+                            data = {
+                                "recode_id": record.id,
+                                "remarks": record.remarks,
+                                "devices_id": ','.join(desc_list),
+                                "start_time": record.start_time,
+                                "end_time": record.end_time,
+                                "wind": record.wind,
+                                "warning_speed": record.warning_speed,
+                                "company": record.company.company_name
+                            }
+                            record_list.append(data)
+                        print(record_list)
+                    return JsonResponse({
+                        "error_no": 0,
+                        "all_test_record": record_list,
+                        "start_time": start_time,
+                        "end_time": end_time
+                    })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+# class app
