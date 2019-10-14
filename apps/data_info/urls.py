@@ -4,7 +4,7 @@ __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import LocationInfoView, SelectDevice, UploadLocationInfoView, StatisticalToOneView, LocationTrackView
 from .views import ShowTXTView, OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
-    Select2Device, RecordLocationInfoView, AppTestRecordView
+    Select2Device, RecordLocationInfoView, AppStartTestRecordView, AppEndTestRecordView, AppTestRecordView
 
 urlpatterns = [
     url(r'^selectDevice/$', SelectDevice.as_view(), name='select_device'),
@@ -18,6 +18,8 @@ urlpatterns = [
     url(r'^rawData/$', OneNetDataView.as_view()),
     url(r'^statistical/(?P<imei_id>\d+)/$', StatisticalToOneView.as_view(), name='statistical'),
     url(r'^track/(?P<imei_id>\d+)/(?P<start_time>.*)/(?P<end_time>.*)$', LocationTrackView.as_view(), name='track'),
+    url(r'^appStartTestRecord/$', AppStartTestRecordView.as_view()),
+    url(r'^appEndTestRecord/$', AppEndTestRecordView.as_view()),
     url(r'^appTestRecord/$', AppTestRecordView.as_view()),
     # url(r'^uploadFile/$', UploadTXT.as_view(), name='uploadTXT'),
     # url(r'^uploadedFile/$', Uploaded.as_view(), name='uploaded'),
