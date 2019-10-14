@@ -172,6 +172,8 @@
                     <i class="fas fa-fw fa-user"></i>
                     <span style="font-size: 20px">用户管理</span></a>
             </li>
+        {% endif %}
+        {% if request.user.permission == "superadmin" %}
             <li {% if 'users/companyInfo' in request.path or "users/addCompany" in request.path or "users/companyDel" in request.path %}class="nav-item active table-active"
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'company_info' %}">
