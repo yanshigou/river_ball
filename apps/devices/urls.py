@@ -3,8 +3,8 @@ __author__ = "dzt"
 __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import DevicesInfoView, DeviceAddView, DeviceView, DeviceModifyView, DeviceDelView, ShowMapView, \
-    ShowMap2View, AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, DeviceActiveView
-
+    ShowMap2View, AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, \
+    DeviceActiveView, AppDeviceActiveView, AppDeviceInfoView
 
 urlpatterns = [
     url(r'^info/$', DevicesInfoView.as_view(), name='devices_info'),
@@ -21,6 +21,8 @@ urlpatterns = [
     url(r'^map222/$', test11.as_view(), name='show_map222'),
     url(r'^appLastLocation/$', AppLastLocation.as_view()),
     url(r'^deviceActive/$', DeviceActiveView.as_view(), name='device_active'),
+    url(r'^appDeviceActive/$', AppDeviceActiveView.as_view()),
+    url(r'^appDeviceInfo/$', AppDeviceInfoView.as_view()),
     # url(r'^map2/$', ShowMap2View.as_view(), name='show_map2'),
     # url(r'^mapOne/(?P<device_id>\d+)/$', ShowOneToMapView.as_view(), name='show_one_to_map'),
     # url(r'^map2/$', ShowMapView2.as_view(), name='show_map2'),

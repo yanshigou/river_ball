@@ -522,3 +522,84 @@ class DeviceActiveView(LoginRequiredMixin, View):
                 return JsonResponse({"status": status})
 
         return JsonResponse({"status": status})
+
+
+class AppDeviceActiveView(View):
+    # 设备启用\停用
+    def post(self, request):
+        try:
+            device_id = request.POST.get('device_id', '')
+            username = request.POST.get('username', '')
+            is_active = request.POST.get('is_active')
+            if is_active == 'true':
+                status = '启用成功！'
+            else:
+                status = '停用成功！'
+            if device_id != '':
+                device_status = DevicesInfo.objects.get(id=device_id)
+                status_form = DeviceActiveForm(request.POST, instance=device_status)
+                if status_form.is_valid():
+                    status_form.save()
+                    create_history_record(username, '%s 设备 %s' % (status, device_status.imei))
+                    return JsonResponse({
+                        "error_no": 0,
+                        "is_active": is_active
+                    })
+            return JsonResponse({
+                "error_no": 2,
+                "info": "fail"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class AppDeviceInfoView(View):
+    def post(self, request):
+        try:
+            imei = request.POST.get('imei', "")
+            username = request.POST.get('username', "")
+            data_list = list()
+            device = DevicesInfo.objects.get(imei=imei)
+            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+            if location:
+                speed = location[0].speed
+                time = location[0].time
+                if speed:
+                    speed = float('%0.2f' % (float(speed) * 0.5144444))
+                if time:
+                    now_time = datetime.now()
+                    if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                        status = "offline"
+                    else:
+                        status = "online"
+                else:
+                    status = "offline"
+            else:
+                speed = ""
+                status = "offline"
+
+            desc = device.desc
+            create_time = device.time
+            data = {
+                "imei": imei,
+                "desc": desc,
+                "speed": speed,
+                "status": status,
+                "create_time": create_time
+            }
+            data_list.append(data)
+            create_history_record(username, '查询设备 %s 详情' % imei)
+            return JsonResponse({
+                "error_no": 0,
+                "data": data_list
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
