@@ -948,13 +948,18 @@ class AppTestRecordView(View):
                     for record in all_test_record:
                         devices_id_list = record.devices_id.split(',')
                         desc_list = list()
+                        imei_list = list()
                         for i in devices_id_list:
-                            desc = DevicesInfo.objects.get(id=i).desc
+                            d = DevicesInfo.objects.get(id=i)
+                            desc = d.desc
+                            imei = d.imei
                             desc_list.append(desc)
+                            imei_list.append(imei)
                         data = {
                             "recode_id": record.id,
                             "remarks": record.remarks,
                             "devices_id": ','.join(desc_list),
+                            "imei_list": ','.join(imei_list),
                             "start_time": record.start_time,
                             "end_time": record.end_time,
                             "wind": record.wind,
@@ -986,13 +991,18 @@ class AppTestRecordView(View):
                         for record in all_test_record:
                             devices_id_list = record.devices_id.split(',')
                             desc_list = list()
+                            imei_list = list()
                             for i in devices_id_list:
-                                desc = DevicesInfo.objects.get(id=i).desc
+                                d = DevicesInfo.objects.get(id=i)
+                                desc = d.desc
+                                imei = d.imei
                                 desc_list.append(desc)
+                                imei_list.append(imei)
                             data = {
                                 "recode_id": record.id,
                                 "remarks": record.remarks,
                                 "devices_id": ','.join(desc_list),
+                                "imei_list": ','.join(imei_list),
                                 "start_time": record.start_time,
                                 "end_time": record.end_time,
                                 "wind": record.wind,

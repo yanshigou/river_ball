@@ -3,7 +3,7 @@ __author__ = "dzt"
 __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import LocationInfoView, SelectDevice, UploadLocationInfoView, StatisticalToOneView, LocationTrackView
-from .views import ShowTXTView, OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
+from .views import OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
     Select2Device, RecordLocationInfoView, AppStartTestRecordView, AppEndTestRecordView, AppTestRecordView
 
 urlpatterns = [
