@@ -3,7 +3,7 @@ __author__ = "dzt"
 __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import DevicesInfoView, DeviceAddView, DeviceView, DeviceModifyView, DeviceDelView, ShowMapView, \
-    ShowMap2View, AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, \
+    AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, \
     DeviceActiveView, AppDeviceActiveView, AppDeviceInfoView
 
 urlpatterns = [
@@ -23,17 +23,4 @@ urlpatterns = [
     url(r'^deviceActive/$', DeviceActiveView.as_view(), name='device_active'),
     url(r'^appDeviceActive/$', AppDeviceActiveView.as_view()),
     url(r'^appDeviceInfo/$', AppDeviceInfoView.as_view()),
-    # url(r'^map2/$', ShowMap2View.as_view(), name='show_map2'),
-    # url(r'^mapOne/(?P<device_id>\d+)/$', ShowOneToMapView.as_view(), name='show_one_to_map'),
-    # url(r'^map2/$', ShowMapView2.as_view(), name='show_map2'),
-    # url(r'^point/$', point.as_view(), name='point'),
-    #
-    # url(r'^test/$', SelectTestView.as_view(), name='test'),
-    # url(r'^test2/$', SelectTest2View.as_view(), name='test2'),
-    #
-    # url(r'^allDevices/$', AllDevicesView.as_view(), name='all_devices'),
-    # url(r'^statusModify/$', DeviceStatusModifyView.as_view(), name='status_Modify'),
-    # url(r'^deviceOfflineExport/$', DeviceOfflineView.as_view(), name='device_offline_export'),
-    # url(r'^deviceInfoExport/$', DeviceInfoExportView.as_view(), name='device_info_export'),
-    # url(r'^ledInfoExport/$', LEDInfoExportView.as_view(), name='led_info_export'),
 ]

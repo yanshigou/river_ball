@@ -8,6 +8,7 @@ import pynmea2
 import json
 import xlsxwriter
 from devices.models import DevicesInfo
+from django.template.context_processors import csrf
 
 
 # 操作记录
@@ -248,3 +249,10 @@ def export_excel(location_infos, sheet_info, filename):
         for x in range(len(wt_data)):
             fsheet.write(i + 1, x, wt_data[x], format2)
     f.close()
+
+
+def get_csrf(request):
+    # 生成 csrf 数据，发送给前端
+    x = csrf(request)
+    csrf_token = x['csrf_token']
+    return csrf_token

@@ -45,6 +45,13 @@ INSTALLED_APPS = [
     'rest_framework',
 ]
 
+# TokenAuthentication 解决APIView中csrf_token 403
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    )
+}
+
 AUTH_USER_MODEL = 'users.UserProfile'
 
 MIDDLEWARE = [
