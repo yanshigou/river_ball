@@ -4,14 +4,15 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import render
-from .forms import RegisterForm, LoginForm, UploadImageForm, UserInfoForm, PasswordForm
+from rest_framework.views import APIView
+from .forms import RegisterForm, LoginForm, UploadImageForm, UserInfoForm, PasswordForm, CompanySerializer, \
+    UserProfileSerializer
 from .models import UserProfile, HistoryRecord, Message, CompanyModel
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, make_message
 from django.core.urlresolvers import reverse
-from datetime import datetime, timedelta
-from django.db.models import Q
 from devices.models import DevicesInfo
+DEFAULT_PASSWORD = "123456"
 
 
 class RegisterView2(LoginRequiredMixin, View):
@@ -209,48 +210,48 @@ class ChangePassword(View):
             return render(request, 'change_password.html', {'password_form': password_form})
 
 
-class AppChangePassword(View):
-
-    def post(self, request):
-        try:
-            username = request.POST.get('username', '')
-            old_password = request.POST.get('old_password', '')
-            password1 = request.POST.get('password1', '')
-            password2 = request.POST.get('password2', '')
-            # print(username)
-            # print(old_password)
-            user = authenticate(username=username, password=old_password)
-            print(user)
-            if not user:
-                return JsonResponse({
-                    "error_no": 1,
-                    "info": "login first"
-                })
-            if user is not None:
-                if password1 == password2:
-                    userinfo = UserProfile.objects.get(username=user)
-                    userinfo.password = make_password(password1)
-                    userinfo.save()
-                    create_history_record(user, "app修改密码")
-                    return JsonResponse({
-                        "error_no": 0
-                    })
-                else:
-                    return JsonResponse({
-                        "error_no": 1,
-                        "info": "password not same"
-                    })
-            else:
-                return JsonResponse({
-                    "error_no": 1,
-                    "info": "password wrong"
-                })
-        except Exception as e:
-            print(e)
-            return JsonResponse({
-                "error_no": -1,
-                "info": str(e)
-            })
+# class AppChangePassword(View):
+#
+#     def post(self, request):
+#         try:
+#             username = request.POST.get('username', '')
+#             old_password = request.POST.get('old_password', '')
+#             password1 = request.POST.get('password1', '')
+#             password2 = request.POST.get('password2', '')
+#             # print(username)
+#             # print(old_password)
+#             user = authenticate(username=username, password=old_password)
+#             print(user)
+#             if not user:
+#                 return JsonResponse({
+#                     "error_no": 1,
+#                     "info": "login first"
+#                 })
+#             if user is not None:
+#                 if password1 == password2:
+#                     userinfo = UserProfile.objects.get(username=user)
+#                     userinfo.password = make_password(password1)
+#                     userinfo.save()
+#                     create_history_record(user, "app修改密码")
+#                     return JsonResponse({
+#                         "error_no": 0
+#                     })
+#                 else:
+#                     return JsonResponse({
+#                         "error_no": 1,
+#                         "info": "password not same"
+#                     })
+#             else:
+#                 return JsonResponse({
+#                     "error_no": 1,
+#                     "info": "password wrong"
+#                 })
+#         except Exception as e:
+#             print(e)
+#             return JsonResponse({
+#                 "error_no": -1,
+#                 "info": str(e)
+#             })
 
 
 class ResetPasswordView(View):
@@ -483,7 +484,8 @@ class CompanyView(LoginRequiredMixin, View):
         print(permission)
         if permission == 'superadmin':
             all_company = CompanyModel.objects.all().order_by('id')
-            return render(request, 'company_info.html', {"all_company": all_company})
+            all_admin_user = UserProfile.objects.filter(permission='admin')
+            return render(request, 'company_info.html', {"all_company": all_company, "all_admin_user": all_admin_user})
         else:
             return HttpResponseRedirect(reverse("index"))
 
@@ -509,3 +511,446 @@ class DelCompanView(LoginRequiredMixin, View):
                 return JsonResponse({"status": "fail", "msg": str(e)})
         else:
             return HttpResponseRedirect(reverse("index"))
+
+
+# 1104重写app html api json
+
+class LoginApiView(APIView):
+    """
+    登录
+    """
+
+    def post(self, request):
+        try:
+            username = request.data.get('username')
+            password = request.data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                # is_active是否启用
+                if user.is_active:
+                    login(request, user)
+                    create_history_record(user, "app登录")
+                    permission = user.permission
+                    company_id = user.company
+                    company_name = user.company
+                    if company_id:
+                        company_id = company_id.id
+                    else:
+                        company_id = ""
+                    if company_name:
+                        company_name = company_name.company_name
+                    else:
+                        company_name = ""
+                    return JsonResponse({
+                        "permission": permission, "company_id": company_id, "error_no": 0,
+                        "company_name": company_name
+                    })
+                else:
+                    return JsonResponse({
+                        "error_no": 3,
+                        "info": "not active"
+                    })
+            else:
+                return JsonResponse({
+                    "error_no": -3,
+                    "info": "username or password wrong"
+                })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class ResetPasswordApiView(APIView):
+    """
+    共用重置密码
+    """
+
+    def post(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+
+            user_id = request.data.get('user_id')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission not in ['superadmin', 'admin']:
+                return JsonResponse({
+                    "error_no": 2,
+                    "info": "您没有权限重置密码"
+                })
+            if permission == 'superadmin':
+
+                userinfo = UserProfile.objects.get(id=user_id)
+                userinfo.password = make_password("123456")
+                userinfo.save()
+                create_history_record(username, '重置%s的密码' % userinfo.username)
+                make_message(userinfo.username, "已重置密码，请立即修改密码！", -1)
+            elif permission == 'admin':
+                company_id = user.company_id
+                userinfo = UserProfile.objects.get(id=user_id, company_id=company_id)
+                if userinfo.permission == 'admin' or userinfo.permission == 'superadmin':
+                    return JsonResponse({
+                        "error_no": -2,
+                        "info": "您没有权限重置密码"
+                    })
+
+            return JsonResponse({
+                "error_no": 0,
+                "info": "重置密码成功"
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class ChangePasswordApiView(APIView):
+    """
+    共用修改密码api
+    """
+
+    def post(self, request):
+        try:
+            username = request.data.get('username', '')
+            old_password = request.data.get('old_password', '')
+            password1 = request.data.get('password1', '')
+            password2 = request.data.get('password2', '')
+            user = authenticate(username=username, password=old_password)
+            if user is not None:
+                if password1 == password2:
+                    userinfo = UserProfile.objects.get(username=user)
+                    userinfo.password = make_password(password1)
+                    userinfo.save()
+                    create_history_record(user, "修改密码")
+                    return JsonResponse({
+                        "error_no": 0,
+                        "info": "Success"
+                    })
+                else:
+                    return JsonResponse({
+                        "error_no": 1,
+                        "info": "两次密码不一致"
+                    })
+            else:
+                return JsonResponse({
+                    "error_no": 1,
+                    "info": "用户名或密码错误"
+                })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class UserInfoApiView(APIView):
+    """
+    共用用户信息 增删改查
+    超级管理员操作所有用户
+    管理员仅能操作当前公司下的用户
+    """
+
+    def get(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            print(username)
+            users = UserProfile.objects.get(username=username)
+            permission = users.permission
+            if permission == 'superadmin':
+                all_users = UserProfile.objects.all().order_by('company_id')
+                serializer = UserProfileSerializer(all_users, many=True)
+            elif permission == 'admin':
+                company_id = users.company_id
+                all_users = UserProfile.objects.filter(company_id=company_id).order_by('id')
+                serializer = UserProfileSerializer(all_users, many=True)
+            else:
+                return JsonResponse({"error_no": 2, "info": "你没有权限修改"})
+            data = {
+                "data": serializer.data,
+                "error_no": 0
+            }
+            create_history_record(username, "查询用户列表")
+            return JsonResponse(data)
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def post(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            newusername = request.data.get("newuser")
+            phone = request.data.get("phone")
+            password = request.data.get("password")
+            if not password:
+                password = '123456'
+            company_id = request.data.get("company_id")
+            perm = request.data.get("permission")
+
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+
+            if permission == 'superadmin':
+                UserProfile.objects.create_user(username=newusername, password=password, mobile=phone,
+                                                company_id=company_id, permission=perm)
+            elif permission == 'admin':
+                company_id = user.company_id
+                UserProfile.objects.create_user(username=newusername, password=password, mobile=phone,
+                                                company_id=company_id, permission=perm)
+            else:
+                return JsonResponse({"error_no": -2, "info": "没有权限新增用户"})
+            create_history_record(username,
+                                  "新增用户%s-%s" % (CompanyModel.objects.get(id=company_id).company_name, newusername))
+            return JsonResponse({"error_no": 0, "info": "Success"})
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def put(self, request):
+        """
+        仅修改权限
+        """
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            perm = request.data.get("permission")
+            modify_username = request.data.get("username")
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if perm == 'superadmin':
+                return JsonResponse({"error_no": -2, "info": "你没有权限修改"})
+
+            if permission == 'superadmin':
+                modify_user = UserProfile.objects.get(username=modify_username)
+                modify_user.permission = perm
+                modify_user.save()
+                create_history_record(username,
+                                      "修改用户%s权限为%s" % (modify_user.username, modify_user.get_permission_display()))
+                return JsonResponse({"error_no": 0, "info": "Success"})
+            elif permission == 'admin':
+                company_id = request.user.company.id
+                modify_user = UserProfile.objects.get(username=modify_username, company_id=company_id)
+                modify_user.permission = perm
+                modify_user.save()
+                create_history_record(username,
+                                      "修改用户%s权限为%s" % (modify_user.username, modify_user.get_permission_display()))
+                return JsonResponse({"error_no": 0, "info": "Success"})
+            else:
+                return JsonResponse({"error_no": -2, "info": "你没有权限修改"})
+
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def delete(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            delete_username = request.data.get("username")
+            admin_user = UserProfile.objects.get(username=username)
+            del_user = UserProfile.objects.get(username=delete_username)
+            admin_permission = admin_user.permission
+            del_user_permission = del_user.permission
+            if admin_permission == "superadmin" and (
+                    del_user_permission != 'admin' or del_user_permission != 'superadmin'):
+                del_user.delete()
+                create_history_record(username, "删除用户" + delete_username)
+                return JsonResponse({"error_no": 0, "info": "Success"})
+            elif admin_permission == 'admin':
+                company_id = request.user.company.id
+                del_user = UserProfile.objects.get(username=delete_username, company_id=company_id)
+                if del_user and del_user.permission != 'admin':
+                    del_user.delete()
+                    create_history_record(username, "删除用户" + delete_username)
+                    return JsonResponse({"error_no": 0, "info": "Success"})
+                else:
+                    return JsonResponse({"error_no": -3, "info": "该公司下没有此用户，或权限不足"})
+            else:
+                return JsonResponse({"error_no": -3, "info": "权限不足"})
+
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class CompanyApiView(APIView):
+    """
+    共用公司管理等
+    仅超级管理员
+    """
+    def get(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            data = list()
+            if permission == 'superadmin':
+                all_company = CompanyModel.objects.all().order_by('id')
+                for company in all_company:
+                    admin_user = UserProfile.objects.filter(company=company)
+                    admin = [u.username for u in admin_user]
+                    data.append({
+                        "id": company.id,
+                        "company_name": company.company_name,
+                        "contact": company.contact,
+                        "phone": company.phone,
+                        "status": company.company_status,
+                        "admin": admin
+                    })
+                create_history_record(username, "查询所有公司")
+                return JsonResponse({
+                    "data": data,
+                    "error_no": 0
+                })
+            else:
+                return JsonResponse({"error_no": -2, "info": "你没有权限"})
+
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def post(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission != "superadmin":
+                return JsonResponse({"error_no": -2, "info": "无权限"})
+            serializer = CompanySerializer(data=request.data)
+            phone = request.data["phone"]
+            if UserProfile.objects.filter(username=phone).count() > 0:
+                return JsonResponse({"error_no": -3, "info": "该电话号码的用户已经存在"})
+            if serializer.is_valid():
+                newcompany = serializer.save()
+                UserProfile.objects.create_user(username=phone, password=DEFAULT_PASSWORD, company=newcompany,
+                                                permission="admin")
+                create_history_record(username, "新建公司%s，管理员%s" % (newcompany.company_name, phone))
+                return JsonResponse({"error_no": 0, "info": "Success"})
+            return JsonResponse({"error_no": -2, "info": "新建公司失败"})
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def put(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission != "superadmin":
+                return JsonResponse({"error_no": -2, "info": "无权限"})
+            company_id = request.data.get("company_id")
+            company_name = request.data.get("company_name")
+            company_status = request.data.get("company_status")
+            contact = request.data.get("contact")
+            phone = request.data.get("phone")
+            company = CompanyModel.objects.get(id=company_id)
+            company.company_name = company_name
+            company.contact = contact
+            company.phone = phone
+            company.company_status = company_status
+            company.save()
+            create_history_record(username, "修改公司" + company.company_name)
+            return JsonResponse({"error_no": 0, "info": "Success"})
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def delete(self, request):
+        try:
+            print('companyApi del')
+            username = request.META.get("HTTP_USERNAME")
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission != "superadmin":
+                return JsonResponse({"error_no": -2, "info": "无权限"})
+            company_id = request.data['company_id']
+            company = CompanyModel.objects.get(id=company_id)
+            company.delete()
+            user = UserProfile.objects.filter(company=company_id)
+            user.delete()
+            create_history_record(username, "删除公司%s，用户%s" % (company.company_name, [u.username for u in user]))
+            return JsonResponse({"error_no": 0, "info": "Success"})
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })

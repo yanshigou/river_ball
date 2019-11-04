@@ -4,9 +4,8 @@ __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import LoginView, LogoutView, UserInfoView, ChangePassword, UploadImageView
 from .views import AllUsersView, ChangePermissionView, DelUserView, HistoryRecordView, AllHistoryRecordView
-from .views import RegisterView2, ResetPasswordView, MessageView, AppLoginView, AppChangePassword, AppLogoutView, \
-    CompanyAddView, CompanyView, DelCompanView
-
+from .views import RegisterView2, ResetPasswordView, MessageView, AppLoginView, ChangePasswordApiView, AppLogoutView, \
+    CompanyAddView, CompanyView, DelCompanView, LoginApiView, ResetPasswordApiView, UserInfoApiView, CompanyApiView
 
 urlpatterns = [
     url(r'^register/$', RegisterView2.as_view(), name='register'),
@@ -16,7 +15,6 @@ urlpatterns = [
     url(r'^appLogout/$', AppLogoutView.as_view()),
     url(r'^userInfo/$', UserInfoView.as_view(), name='user_info'),
     url(r'^changePassword/$', ChangePassword.as_view(), name='change_password'),
-    url(r'^appChangePassword/$', AppChangePassword.as_view()),
     url(r'^resetPassword/$', ResetPasswordView.as_view(), name='reset_password'),
     url(r'^uploadImage/$', UploadImageView.as_view(), name='upload_image'),
     url(r'^allUsers/$', AllUsersView.as_view(), name='all_users'),
@@ -28,4 +26,10 @@ urlpatterns = [
     url(r'^addCompany/$', CompanyAddView.as_view(), name='company_add'),
     url(r'^companyInfo/$', CompanyView.as_view(), name='company_info'),
     url(r'^companyDel/$', DelCompanView.as_view(), name='company_del'),
+
+    url(r'^loginApi/$', LoginApiView.as_view()),
+    url(r'^changePasswordApi/$', ChangePasswordApiView.as_view()),
+    url(r'^resetPasswordApi/$', ResetPasswordApiView.as_view()),
+    url(r'^userInfoApi/$', UserInfoApiView.as_view()),
+    url(r'^companyApi/$', CompanyApiView.as_view()),
 ]
