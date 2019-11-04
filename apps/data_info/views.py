@@ -2,20 +2,19 @@
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
-from datetime import datetime, timedelta
-from myutils.utils import create_history_record, gps_amap, gps_conversion, check_one_net_data, export_excel, device_is_active
-from .models import LocationInfo, TXT, DevicesOneNetInfo, TestRecord
+from datetime import timedelta
+from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active
+from .models import LocationInfo, DevicesOneNetInfo, TestRecord
 from users.models import UserProfile
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
-from .forms import TXTInfoForm, LocationInfoSerializer, DevicesInfoSerializer
+from .forms import LocationInfoSerializer, DevicesInfoSerializer
 from rest_framework.views import APIView
 from django.core.urlresolvers import reverse
-from river_ball.settings import MEDIA_ROOT
-import os
 import re
 from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import connection
 
 
 class SelectDevice(LoginRequiredMixin, View):
@@ -268,97 +267,6 @@ class LocationInfoView(LoginRequiredMixin, View):
             })
 
 
-class RecordLocationInfoView(LoginRequiredMixin, View):
-    def get(self, request, record_id):
-
-        permission = request.user.permission
-        print(permission)
-        if permission != 'superadmin':
-            test_record = TestRecord.objects.filter(id=record_id)
-            try:
-                company = request.user.company.company_name
-                record_company = test_record[0].company.company_name
-
-            except Exception as e:
-                print(e)
-                return HttpResponseRedirect(reverse('select2_device'))
-            if company and test_record and record_company == company:
-                devices_id = test_record[0].devices_id
-                start_time = test_record[0].start_time
-                start_time2 = start_time + timedelta(hours=-8)
-                end_time = test_record[0].end_time
-                end_time2 = end_time + timedelta(hours=-8)
-                imei_id_list = devices_id.split(',')
-                print(imei_id_list)
-                a_list = list()
-                a_list2 = list()
-                desc_list = list()
-                info_list = list()
-                for imei_id in imei_id_list:
-                    location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                                 time__lte=end_time2).order_by('-time')
-                    if location_infos:
-                        imei = location_infos[0].imei.imei
-                        desc = location_infos[0].imei.desc
-                        desc_list.append(desc)
-                        create_history_record(request.user, '查询设备号%s数据' % imei)
-                        a = location_infos
-                        for i in a:
-                            info_dict = dict()
-                            info_dict['desc'] = i.imei.desc
-                            if i.time:
-                                info_dict['time'] = i.time + timedelta(hours=8)
-                            if i.speed:
-                                info_dict['speed'] = float('%0.2f' % (float(i.speed) * 0.5144444))
-                            a_list.append(info_dict)
-                    # TODO 与 info_dict一把 把数据重新拿出来组装
-                    # print('a_list', a_list)
-
-                return render(request, 'record_location_infos.html', {
-                    "a_list": a_list,
-                    "desc_list": desc_list
-                })
-                # return render(request, 'location_infos.html', {
-                #     "imei_id": imei_id,
-                #     "imei": "",
-                #     "location_data": location_infos
-                # })
-            else:
-                return HttpResponseRedirect(reverse('select2_device'))
-        else:
-            location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                         time__lte=end_time).order_by('-time')
-            if location_infos:
-                imei = location_infos[0].imei.imei
-                create_history_record(request.user, '查询设备号%s数据' % imei)
-                a = location_infos.values()
-                for i in a:
-                    i['imei'] = imei
-                    if i['time']:
-                        i['time'] = i['time'] + timedelta(hours=8)
-                    if i['speed']:
-                        i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
-                    if i['longitude'] and i['latitude']:
-                        i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
-                    if i['power'] and len(i['power']) > 4:
-                        i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
-                # print(a)
-                return render(request, 'location_infos.html', {
-                    "imei_id": imei_id,
-                    "imei": imei,
-                    "location_data": a,
-                    "start_time": start_time,
-                    "end_time": now_time
-                })
-            return render(request, 'location_infos.html', {
-                "imei_id": imei_id,
-                "imei": "",
-                "location_data": location_infos,
-                "start_time": start_time,
-                "end_time": now_time
-            })
-
-
 class AppLocationInfoView(View):
     def post(self, request):
         try:
@@ -511,7 +419,7 @@ class UploadLocationInfoView(APIView):
 class OneNetDataView(APIView):
     def post(self, request):
         try:
-            print("oneNet")
+            # print("oneNet")
             # print(request.data)
             current_data = request.data.get('current_data')[0]
             dev_id = current_data.get('dev_id')
@@ -771,108 +679,6 @@ class LocationTrackView(LoginRequiredMixin, View):
         })
 
 
-class UploadTXT(LoginRequiredMixin, View):
-    """
-    上传GPS文件
-    """
-
-    def get(self, request):
-        form = TXTInfoForm()
-        return render(request, 'upload.html', {"form": form})
-
-    def post(self, request):
-        form = TXTInfoForm(request.POST, request.FILES)
-        if form.is_valid():
-            # 获取表单数据
-            info = form.cleaned_data['info']
-            filename = form.cleaned_data['filename']
-            time = datetime.now()
-
-            f = TXT()
-            f.filename = filename
-            f.info = info
-            f.starttime = time
-            f.save()
-            return HttpResponseRedirect(reverse("uploaded"))
-        return HttpResponseRedirect(reverse("uploadTXT"))
-
-
-class Uploaded(LoginRequiredMixin, View):
-    def get(self, request):
-        all_txt = TXT.objects.all()
-        return render(request, 'uploaded.html', {
-            'all_txt': all_txt
-        })
-
-
-class ShowTXTView(LoginRequiredMixin, View):
-    """
-    GPS文件轨迹展示
-    """
-
-    def get(self, request, file_id):
-        file = TXT.objects.get(id=file_id)
-        path2 = MEDIA_ROOT + "/" + str(file.filename)
-        # print(path2)
-        lng = []
-        lat = []
-        locations = []
-        if os.path.exists(path2):
-            f = open(path2, "r")
-            for line in f.readlines():
-                arrline = line.split("  ")
-                lnglat = [float(arrline[1]), float(arrline[2])]
-                locations.append(lnglat)
-            f.close()
-            # print(len(locations))
-            # 批量转换经纬度 个数限制
-            if len(locations) <= 40:
-                res = gps_amap(locations)
-                # print(res.json())
-                if res.status_code != 200:
-                    return JsonResponse({"status": "fail"})
-                amap_locations = res.json().get('locations')
-                str_locations = amap_locations.split(";")
-                for x in str_locations:
-                    lnglat = x.split(",")
-                    lng.append(float(lnglat[0]))
-                    lat.append(float(lnglat[1]))
-                return render(request, 'track.html', {"lng": lng, "lat": lat})
-            for i in range(40, len(locations), 40):
-                res = gps_amap(locations[i - 40:i])
-                if res.status_code != 200:
-                    break
-                amap_locations = res.json().get('locations')
-                str_locations = amap_locations.split(";")
-                for x in str_locations:
-                    lnglat = x.split(",")
-                    lng.append(float(lnglat[0]))
-                    lat.append(float(lnglat[1]))
-            return render(request, 'track.html', {"lng": lng, "lat": lat})
-
-        # return render(request, 'point.html', {"lng": lng, "lat": lat})
-        return JsonResponse({"status": "fail"})
-
-
-# 删除文件
-class DelFile(LoginRequiredMixin, View):
-    def post(self, request):
-        try:
-            file_id = request.POST.get('file_id')
-            txt = TXT.objects.get(id=file_id)
-            filename = txt.filename
-            txt.delete()
-            # print(filename)
-            src_filename = MEDIA_ROOT + "/" + str(filename)
-            if os.path.exists(src_filename):
-                os.remove(src_filename)
-                print('del %s ok' % src_filename)
-                return JsonResponse({"status": "success"})
-        except Exception as e:
-            print(e)
-            return JsonResponse({"status": "fail", 'msg': "删除失败"})
-
-
 class AppStartTestRecordView(View):
     def post(self, request):
         try:
@@ -1025,4 +831,124 @@ class AppTestRecordView(View):
             })
 
 
-# class app
+# daijian 191030
+class AppTestRecordSpeedListApiView(APIView):
+    def get(self, request):
+        try:
+            test_id = request.query_params.get('test_id')
+            start_ind = request.query_params.get("start_ind")
+            read_count = request.query_params.get("read_count")
+            if int(start_ind) < 0:
+                start_ind = 0
+            if int(read_count) < 0:
+                read_count = 0
+            print(test_id, start_ind, read_count)
+            test_record = TestRecord.objects.get(id=test_id)
+
+            delta = timedelta(hours=8)
+            start_time = test_record.start_time
+            end_time = test_record.end_time
+            device_list_str = test_record.devices_id
+            devices_list = device_list_str.split(',')
+
+            sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(speed) as speeds from  \
+                data_info_locationinfo where imei_id in(" + device_list_str + ") \
+                and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+                and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+                group by time order by time desc;"
+            print(sql)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                print(data)
+            sendlist = list()
+            for rec in data:
+                dc = len(devices_list)
+                sendrec = [""] * (dc + 1)
+                rectime = rec[0] + delta
+                recimeis = rec[1].split(',')
+                recspeeds = rec[2].split(',')
+                sendrec[0] = rectime
+                cc = 0
+                for dd in devices_list:
+                    ii = 0
+                    for im in recimeis:
+                        if dd == im:
+                            sendrec[cc + 1] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                        ii = ii + 1
+                    cc = cc + 1
+                sendlist.append(sendrec)
+
+            return JsonResponse({
+                "error_no": 0,
+                "all_count": len(sendlist),
+                "all_test_record": sendlist[int(start_ind):int(start_ind + read_count)],
+                "start_time": start_time,
+                "end_time": end_time
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class AppTestRecordLocationListApiView(APIView):
+    def get(self, request):
+        try:
+            test_id = request.query_params.get('test_id')
+            print(test_id)
+            test_record = TestRecord.objects.get(id=test_id)
+            delta = timedelta(hours=8)
+            start_time = test_record.start_time
+            end_time = test_record.end_time
+            device_list_str = test_record.devices_id
+            devices_list = device_list_str.split(',')
+
+            sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(longitude) as longitudes,\
+                 GROUP_CONCAT(latitude) as latitudes,GROUP_CONCAT(speed) as speeds from  \
+                data_info_locationinfo where imei_id in(" + device_list_str + ") \
+                and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+                and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+                group by time order by time desc;"
+            print(sql)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                data = cursor.fetchall()
+                # print(data)
+            sendlist = list()
+            for rec in data:
+                sendrec = [""] * (len(devices_list) * 3 + 1)
+                rectime = rec[0] + delta
+                recimeis = rec[1].split(',')
+                reclongitudes = rec[2].split(',')
+                reclatitude = rec[3].split(',')
+                recspeeds = rec[4].split(',')
+                sendrec[0] = rectime
+                cc = 1
+                print(rec)
+                for device in devices_list:
+                    ii = 0
+                    for imei in recimeis:
+                        if device == imei:
+                            sendrec[cc], sendrec[cc + 1] = gps_conversion(str(reclongitudes[ii]), str(reclatitude[ii]))
+                            sendrec[cc + 2] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                            print(reclongitudes[ii] + "," + reclatitude[ii] + "," + recspeeds[ii])
+                        ii = ii + 1
+                    cc = cc + 3
+                print(sendrec)
+                sendlist.append(sendrec)
+
+            return JsonResponse({
+                "error_no": 0,
+                "all_test_record": sendlist,
+                "start_time": start_time,
+                "end_time": end_time
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
