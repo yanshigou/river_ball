@@ -2,7 +2,8 @@
 __author__ = "dzt"
 __date__ = "2019/9/4"
 from django import forms
-from users.models import UserProfile
+from users.models import UserProfile, CompanyModel
+from rest_framework import serializers
 
 
 class RegisterForm(forms.Form):
@@ -33,3 +34,14 @@ class UserInfoForm(forms.ModelForm):
         model = UserProfile
         fields = ['name', 'gender', 'company', 'unique_id', 'mobile']
 
+
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyModel
+        fields = ('id', 'company_name', 'contact', 'phone', 'company_status')
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ('id', 'username', 'mobile', 'permission', 'company_id')

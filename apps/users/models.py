@@ -8,6 +8,9 @@ from django.contrib.auth.models import AbstractUser
 
 class CompanyModel(models.Model):
     company_name = models.CharField(max_length=50, verbose_name='公司名称', unique=True)
+    contact = models.CharField(max_length=50, verbose_name='联系人')
+    phone = models.CharField(max_length=50, verbose_name='联系电话', unique=True)
+    company_status = models.IntegerField(default=1, verbose_name='公司状态')
 
 
 class UserProfile(AbstractUser):
