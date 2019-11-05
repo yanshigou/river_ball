@@ -42,6 +42,8 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source='get_company_name', read_only=True)
+
     class Meta:
         model = UserProfile
-        fields = ('id', 'username', 'mobile', 'permission', 'company_id')
+        fields = ('id', 'username', 'mobile', 'permission', 'company_id', 'company_name')

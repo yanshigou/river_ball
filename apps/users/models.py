@@ -43,6 +43,13 @@ class UserProfile(AbstractUser):
         # 获取未读消息的详细内容
         return Message.objects.filter(username=self.username, has_read=False)
 
+    def get_company_name(self):
+        # 获取公司名称
+        if self.company:
+            return CompanyModel.objects.get(id=self.company.id).company_name
+        else:
+            return ""
+
 
 class HistoryRecord(models.Model):
     username = models.ForeignKey(UserProfile, to_field='username', verbose_name="用户")
