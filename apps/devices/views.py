@@ -5,12 +5,13 @@ from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, gps_conversion, one_net_register
 from .models import DevicesInfo, CompanyModel
 from data_info.models import LocationInfo, DevicesOneNetInfo
-from .forms import DevicesInfoForm, DeviceActiveForm
+from .forms import DevicesInfoForm, DeviceActiveForm, DevicesInfoSerializer
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
 from datetime import datetime, timedelta
 from data_info.views import HttpResponseRedirect, reverse
 from users.models import UserProfile
+from rest_framework.views import APIView
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
@@ -303,12 +304,21 @@ class ShowMap2View(View):
         return render(request, "map_show.html", {})
 
 
-class AppLastLocation(View):
+class AppLastLocation(APIView):
+    """
+    共用最后位置查询
+    """
     def post(self, request):
         try:
-            imei_list = request.POST.get('imei_list', "")
+            imei_list = request.data.get('imei_list', "")
             imei_list = imei_list.split(',')
-            # print(imei_list)
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission != "superadmin":
+                company_id = user.company_id
+                devices = DevicesInfo.objects.filter(imei__in=imei_list, company_id=company_id)
+                imei_list = [i.imei for i in devices]
             data_list = list()
             for imei in imei_list:
                 location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
@@ -351,6 +361,11 @@ class AppLastLocation(View):
             return JsonResponse({
                 "error_no": 0,
                 "data": data_list
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
             })
         except Exception as e:
             print(e)
@@ -557,45 +572,317 @@ class AppDeviceActiveView(View):
             })
 
 
-class AppDeviceInfoView(View):
+class DeviceInfoApiView(APIView):
+    """
+    共用设备增删改查
+    """
+    def get(self, request):
+        """
+        查询单个
+        """
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            imei = request.query_params.get('imei')
+            data_list = list()
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission == 'superadmin':
+                device = DevicesInfo.objects.get(imei=imei)
+                location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+                if location:
+                    speed = location[0].speed
+                    time = location[0].time
+                    if speed:
+                        speed = float('%0.2f' % (float(speed) * 0.5144444))
+                    if time:
+                        now_time = datetime.now()
+                        if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                            status = "offline"
+                        else:
+                            status = "online"
+                    else:
+                        status = "offline"
+                else:
+                    speed = ""
+                    status = "offline"
+
+                desc = device.desc
+                create_time = device.time
+                data = {
+                    "imei": imei,
+                    "desc": desc,
+                    "speed": speed,
+                    "status": status,
+                    "create_time": create_time
+                }
+                data_list.append(data)
+                create_history_record(username, '查询设备 %s 详情' % imei)
+                return JsonResponse({
+                    "error_no": 0,
+                    "data": data_list
+                })
+            else:
+                company_id = user.company_id
+                device = DevicesInfo.objects.get(imei=imei, company_id=company_id)
+                location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+                if location:
+                    speed = location[0].speed
+                    time = location[0].time
+                    if speed:
+                        speed = float('%0.2f' % (float(speed) * 0.5144444))
+                    if time:
+                        now_time = datetime.now()
+                        if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                            status = "offline"
+                        else:
+                            status = "online"
+                    else:
+                        status = "offline"
+                else:
+                    speed = ""
+                    status = "offline"
+
+                desc = device.desc
+                create_time = device.time
+                data = {
+                    "imei": imei,
+                    "desc": desc,
+                    "speed": speed,
+                    "status": status,
+                    "create_time": create_time
+                }
+                data_list.append(data)
+                create_history_record(username, '查询设备 %s 详情' % imei)
+                return JsonResponse({
+                    "error_no": 0,
+                    "data": data_list
+                })
+
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except DevicesInfo.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个设备"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
     def post(self, request):
         try:
-            imei = request.POST.get('imei', "")
-            username = request.POST.get('username', "")
-            data_list = list()
-            device = DevicesInfo.objects.get(imei=imei)
-            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
-            if location:
-                speed = location[0].speed
-                time = location[0].time
-                if speed:
-                    speed = float('%0.2f' % (float(speed) * 0.5144444))
-                if time:
-                    now_time = datetime.now()
-                    if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
-                        status = "offline"
-                    else:
-                        status = "online"
-                else:
-                    status = "offline"
-            else:
-                speed = ""
-                status = "offline"
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission == "superadmin":
+                company = request.data.get('company')
+                company_id = CompanyModel.objects.get(company_name=company).id
+                request.data['company'] = company_id
+                device_ser = DevicesInfoSerializer(data=request.data)
+                imei = request.data.get('imei')
+                if device_ser.is_valid():
+                    device_ser.save()
+                    imei, dev_id = one_net_register(imei)
+                    imei_id = DevicesInfo.objects.get(imei=imei).id
+                    if imei and dev_id:
+                        DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
+                        create_history_record(username, '新增设备 %s, OneNet ID %s' % (imei, dev_id))
+                        return JsonResponse({
+                            "error_no": 0
+                        })
+                    return JsonResponse({
+                        "error_no": 4,
+                        "info": "OneNet error, delete that"
+                    })
 
-            desc = device.desc
-            create_time = device.time
-            data = {
-                "imei": imei,
-                "desc": desc,
-                "speed": speed,
-                "status": status,
-                "create_time": create_time
-            }
-            data_list.append(data)
-            create_history_record(username, '查询设备 %s 详情' % imei)
+                return JsonResponse({
+                    "error_no": -2,
+                    "info": device_ser.errors
+                })
+            else:
+                company_id = user.company.id
+                request.data['company'] = company_id
+                device_ser = DevicesInfoSerializer(data=request.data)
+                imei = request.data.get('imei')
+                if device_ser.is_valid():
+                    device_ser.save()
+                    imei, dev_id = one_net_register(imei)
+                    imei_id = DevicesInfo.objects.get(imei=imei).id
+                    if imei and dev_id:
+                        DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
+                        create_history_record(username, '新增设备 %s, OneNet ID %s' % (imei, dev_id))
+                        return JsonResponse({
+                            "error_no": 0
+                        })
+                    return JsonResponse({
+                        "error_no": 4,
+                        "info": "OneNet error, delete that"
+                    })
+                return JsonResponse({
+                    "error_no": -2,
+                    "info": device_ser.errors
+                })
+        except UserProfile.DoesNotExist:
+                return JsonResponse({
+                    "error_no": -2,
+                    "info": "没有这个用户"
+                })
+        except DevicesInfo.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个设备"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def put(self, request):
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            device_id = request.data.get('device_id')
+            desc = request.data.get('desc')
+            is_active = request.data.get('is_active')
+
+            if permission == "superadmin":
+                device_info = DevicesInfo.objects.get(id=device_id)
+                device_info.is_active = is_active
+                device_info.desc = desc
+                device_info.is_active = is_active
+                device_info.save()
+
+                create_history_record(username, '修改设备 %s 的信息' % device_info.imei)
+                return JsonResponse({
+                    "error_no": 0
+                })
+            elif permission == "admin":
+                company_id = user.company_id
+                device_info = DevicesInfo.objects.get(id=device_id, company_id=company_id)
+                device_info.is_active = is_active
+                device_info.desc = desc
+                device_info.is_active = is_active
+                device_info.save()
+                create_history_record(username, '修改设备 %s 的信息' % device_info.imei)
+                return JsonResponse({
+                    "error_no": 0
+                })
+            else:
+                return JsonResponse({
+                    "error_no": -2,
+                    "info": "没有权限"
+                })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except DevicesInfo.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个设备"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def delete(self, request):
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            device_id = request.data.get('device_id')
+
+            if permission == "superadmin":
+                device_info = DevicesInfo.objects.get(id=device_id)
+                device_info.delete()
+                create_history_record(username, '删除设备 %s，%s ' % (device_info.imei, device_info.desc))
+                return JsonResponse({
+                    "error_no": 0
+                })
+            elif permission == "admin":
+                company_id = user.company_id
+                device_info = DevicesInfo.objects.get(id=device_id, company_id=company_id)
+                device_info.delete()
+                create_history_record(username, '删除设备 %s，%s ' % (device_info.imei, device_info.desc))
+                return JsonResponse({
+                    "error_no": 0
+                })
+            else:
+                return JsonResponse({
+                    "error_no": -2,
+                    "info": "没有权限"
+                })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except DevicesInfo.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个设备"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class AllDeviceInfoApi(View):
+    def get(self, request):
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission == "superadmin":
+                all_devices = DevicesInfo.objects.all()
+            else:
+                company_id = user.company_id
+                all_devices = DevicesInfo.objects.filter(company_id=company_id)
+            d_sers = DevicesInfoSerializer(all_devices, many=True)
             return JsonResponse({
                 "error_no": 0,
-                "data": data_list
+                "data": d_sers.data
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
             })
         except Exception as e:
             print(e)
