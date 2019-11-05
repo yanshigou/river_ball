@@ -267,18 +267,28 @@ class LocationInfoView(LoginRequiredMixin, View):
             })
 
 
-class AppLocationInfoView(View):
+class AppLocationInfoView(APIView):
+    """
+    共用单个设备数据查询
+    """
     def post(self, request):
         try:
-            start_time = request.POST.get('start_time', '')
-            end_time = request.POST.get('end_time', '')
-            imei_id = request.POST.get('imei_id', '')
-            username = request.POST.get('username', '')
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            start_time = request.data.get('start_time')
+            end_time = request.data.get('end_time')
+            imei_id = request.data.get('imei_id')
             start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
             end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-            location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                         time__lte=end_time2).order_by('-time')
-            page = request.POST.get('page', '1')
+            if permission == "superadmin":
+                location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                             time__lte=end_time2).order_by('-time')
+            else:
+                company_id = user.company_id
+                location_infos= LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                            time__lte=end_time2, imei__company_id=company_id).order_by('-time')
+            page = request.data.get('page', '1')
             print(page)
             paginator = Paginator(location_infos, 20)
             try:
@@ -325,6 +335,11 @@ class AppLocationInfoView(View):
             return JsonResponse({
                 "error_no": 0,
                 "data": data
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
             })
         except Exception as e:
             print(e)
@@ -679,20 +694,31 @@ class LocationTrackView(LoginRequiredMixin, View):
         })
 
 
-class AppStartTestRecordView(View):
+class AppStartTestRecordView(APIView):
     def post(self, request):
         try:
-            start_time = request.POST.get('start_time', '')
-            devices_id = request.POST.get('devices_id', '')
-            remarks = request.POST.get('remarks', '')
-            username = request.POST.get('username', '')
-            wind = request.POST.get('wind', '')
-            warning_speed = request.POST.get('warning_speed', '')
-            company_id = request.POST.get('company_id', '')
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            if permission == "superadmin":
+                company_id = request.data.get('company_id')
+            else:
+                company_id = user.company_id
+            start_time = request.data.get('start_time')
+            devices_id = request.data.get('devices_id')
+            remarks = request.data.get('remarks', '')
+            wind = request.data.get('wind', '')
+            warning_speed = request.data.get('warning_speed')
             TestRecord.objects.create(start_time=start_time, devices_id=devices_id, remarks=remarks,
                                       company_id=company_id, wind=wind, warning_speed=warning_speed)
+            create_history_record(username, '开始测量记录 %s' % TestRecord.remarks)
             return JsonResponse({
                 "error_no": 0
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
             })
         except Exception as e:
             print(e)
@@ -702,33 +728,33 @@ class AppStartTestRecordView(View):
             })
 
 
-class AppEndTestRecordView(View):
+class AppEndTestRecordView(APIView):
     def post(self, request):
         try:
-            username = request.POST.get('username')
-            record_id = request.POST.get('record_id')
+            username = request.META.get('HTTP_USERNAME')
             user = UserProfile.objects.get(username=username)
             permission = user.permission
-            print(permission)
-            if permission == 'superadmin':
-                record = TestRecord.objects.get(id=record_id)
-                record.end_time = datetime.now()
-                record.save()
-            else:
-                try:
-                    company_id = user.company.id
-                    record = TestRecord.objects.get(id=record_id, company_id=company_id)
-                    record.end_time = datetime.now()
-                    record.save()
-                except Exception as e:
-                    print(e)
-                    return JsonResponse({
-                        "error_no": -1,
-                        "info": str(e)
-                    })
+            record_id = request.data.get('record_id')
+            if permission != "superadmin":
+                company_id = user.company_id
+                record_id = TestRecord.objects.get(company_id=company_id, id=record_id).id
 
+            record = TestRecord.objects.get(id=record_id)
+            record.end_time = datetime.now()
+            record.save()
+            create_history_record(username, '结束测量记录 %s' % TestRecord.remarks)
             return JsonResponse({
                 "error_no": 0
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except TestRecord.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个记录"
             })
         except Exception as e:
             print(e)
@@ -738,20 +764,22 @@ class AppEndTestRecordView(View):
             })
 
 
-class AppTestRecordView(View):
+class TestRecordDoneView(View):
+    """
+    测量数据-已完成查询
+    """
     def post(self, request):
         try:
-            username = request.POST.get('username')
+            username = request.META.get('HTTP_USERNAME')
             user = UserProfile.objects.get(username=username)
             permission = user.permission
-            print(permission)
-            start_time = request.POST.get('start_time')
-            end_time = request.POST.get('end_time')
             if permission == 'superadmin':
-                all_test_record = TestRecord.objects.filter(start_time__gte=start_time, start_time__lte=end_time)
+                all_test_record = TestRecord.objects.all()
                 record_list = list()
                 if all_test_record:
                     for record in all_test_record:
+                        if not record.end_time:
+                            continue
                         devices_id_list = record.devices_id.split(',')
                         desc_list = list()
                         imei_list = list()
@@ -773,12 +801,10 @@ class AppTestRecordView(View):
                             "company": record.company.company_name
                         }
                         record_list.append(data)
-                    print(record_list)
+                create_history_record(username, '查询已完成的测量记录')
                 return JsonResponse({
                     "error_no": 0,
                     "all_test_record": record_list,
-                    "start_time": start_time,
-                    "end_time": end_time
                 })
             else:
                 try:
@@ -795,6 +821,8 @@ class AppTestRecordView(View):
                     record_list = list()
                     if all_test_record:
                         for record in all_test_record:
+                            if not record.end_time:
+                                continue
                             devices_id_list = record.devices_id.split(',')
                             desc_list = list()
                             imei_list = list()
@@ -816,13 +844,110 @@ class AppTestRecordView(View):
                                 "company": record.company.company_name
                             }
                             record_list.append(data)
-                        print(record_list)
+                    create_history_record(username, '查询已完成的测量记录')
                     return JsonResponse({
                         "error_no": 0,
-                        "all_test_record": record_list,
-                        "start_time": start_time,
-                        "end_time": end_time
+                        "all_test_record": record_list
                     })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class TestRecordNotDoneView(View):
+    """
+    测量数据-正在测量查询
+    """
+    def post(self, request):
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
+            print(permission)
+            if permission == 'superadmin':
+                all_test_record = TestRecord.objects.all()
+                record_list = list()
+                if all_test_record:
+                    for record in all_test_record:
+                        if record.end_time:
+                            continue
+                        devices_id_list = record.devices_id.split(',')
+                        desc_list = list()
+                        imei_list = list()
+                        for i in devices_id_list:
+                            d = DevicesInfo.objects.get(id=i)
+                            desc = d.desc
+                            imei = d.imei
+                            desc_list.append(desc)
+                            imei_list.append(imei)
+                        data = {
+                            "recode_id": record.id,
+                            "remarks": record.remarks,
+                            "devices_id": ','.join(desc_list),
+                            "imei_list": ','.join(imei_list),
+                            "start_time": record.start_time,
+                            "end_time": record.end_time,
+                            "wind": record.wind,
+                            "warning_speed": record.warning_speed,
+                            "company": record.company.company_name
+                        }
+                        record_list.append(data)
+                create_history_record(username, '查询正在测量的记录')
+                return JsonResponse({
+                    "error_no": 0,
+                    "all_test_record": record_list,
+                })
+            else:
+                try:
+                    company = user.company.company_name
+                    # print(company)
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        "error_no": -1,
+                        "info": str(e)
+                    })
+                if company:
+                    all_test_record = TestRecord.objects.filter(company__company_name=company)
+                    record_list = list()
+                    if all_test_record:
+                        for record in all_test_record:
+                            if record.end_time:
+                                continue
+                            devices_id_list = record.devices_id.split(',')
+                            desc_list = list()
+                            imei_list = list()
+                            for i in devices_id_list:
+                                d = DevicesInfo.objects.get(id=i)
+                                desc = d.desc
+                                imei = d.imei
+                                desc_list.append(desc)
+                                imei_list.append(imei)
+                            data = {
+                                "recode_id": record.id,
+                                "remarks": record.remarks,
+                                "devices_id": ','.join(desc_list),
+                                "imei_list": ','.join(imei_list),
+                                "start_time": record.start_time,
+                                "end_time": record.end_time,
+                                "wind": record.wind,
+                                "warning_speed": record.warning_speed,
+                                "company": record.company.company_name
+                            }
+                            record_list.append(data)
+                    create_history_record(username, '查询正在测量的记录')
+                    return JsonResponse({
+                        "error_no": 0,
+                        "all_test_record": record_list
+                    })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
         except Exception as e:
             print(e)
             return JsonResponse({
@@ -835,15 +960,15 @@ class AppTestRecordView(View):
 class AppTestRecordSpeedListApiView(APIView):
     def get(self, request):
         try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
             test_id = request.query_params.get('test_id')
-            start_ind = request.query_params.get("start_ind")
-            read_count = request.query_params.get("read_count")
-            if int(start_ind) < 0:
-                start_ind = 0
-            if int(read_count) < 0:
-                read_count = 0
-            print(test_id, start_ind, read_count)
-            test_record = TestRecord.objects.get(id=test_id)
+            if permission == "superadmin":
+                test_record = TestRecord.objects.get(id=test_id)
+            else:
+                company_id = user.company_id
+                test_record = TestRecord.objects.get(id=test_id, company_id=company_id)
 
             delta = timedelta(hours=8)
             start_time = test_record.start_time
@@ -856,13 +981,40 @@ class AppTestRecordSpeedListApiView(APIView):
                 and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
                 and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
                 group by time order by time desc;"
-            print(sql)
+            # print(sql)
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 data = cursor.fetchall()
                 print(data)
             sendlist = list()
-            for rec in data:
+            # for rec in data:
+            #     dc = len(devices_list)
+            #     sendrec = [""] * (dc + 1)
+            #     rectime = rec[0] + delta
+            #     recimeis = rec[1].split(',')
+            #     recspeeds = rec[2].split(',')
+            #     sendrec[0] = rectime
+            #     cc = 0
+            #     for dd in devices_list:
+            #         ii = 0
+            #         for im in recimeis:
+            #             if dd == im:
+            #                 sendrec[cc + 1] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+            #             ii = ii + 1
+            #         cc = cc + 1
+            #     sendlist.append(sendrec)
+
+            page = request.query_params.get('page', '1')
+            count = request.query_params.get('count', 100)
+            print(page)
+            paginator = Paginator(data, count)
+            try:
+                data_page = paginator.page(page)
+            except PageNotAnInteger:
+                data_page = paginator.page(1)
+            except EmptyPage:
+                data_page = paginator.page(paginator.num_pages)
+            for rec in data_page:
                 dc = len(devices_list)
                 sendrec = [""] * (dc + 1)
                 rectime = rec[0] + delta
@@ -878,13 +1030,23 @@ class AppTestRecordSpeedListApiView(APIView):
                         ii = ii + 1
                     cc = cc + 1
                 sendlist.append(sendrec)
-
+            create_history_record(username, '查询测量记录 %s 速度详情' % test_record.remarks)
             return JsonResponse({
                 "error_no": 0,
-                "all_count": len(sendlist),
-                "all_test_record": sendlist[int(start_ind):int(start_ind + read_count)],
+                "all_test_record": sendlist,
                 "start_time": start_time,
-                "end_time": end_time
+                "end_time": end_time,
+                "total": paginator.num_pages
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except TestRecord.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个记录"
             })
         except Exception as e:
             print(e)
@@ -897,9 +1059,16 @@ class AppTestRecordSpeedListApiView(APIView):
 class AppTestRecordLocationListApiView(APIView):
     def get(self, request):
         try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            permission = user.permission
             test_id = request.query_params.get('test_id')
-            print(test_id)
-            test_record = TestRecord.objects.get(id=test_id)
+            if permission == "superadmin":
+                test_record = TestRecord.objects.get(id=test_id)
+            else:
+                company_id = user.company_id
+                test_record = TestRecord.objects.get(id=test_id, company_id=company_id)
+
             delta = timedelta(hours=8)
             start_time = test_record.start_time
             end_time = test_record.end_time
@@ -912,13 +1081,44 @@ class AppTestRecordLocationListApiView(APIView):
                 and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
                 and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
                 group by time order by time desc;"
-            print(sql)
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 data = cursor.fetchall()
                 # print(data)
             sendlist = list()
-            for rec in data:
+            # for rec in data:
+            #     sendrec = [""] * (len(devices_list) * 3 + 1)
+            #     rectime = rec[0] + delta
+            #     recimeis = rec[1].split(',')
+            #     reclongitudes = rec[2].split(',')
+            #     reclatitude = rec[3].split(',')
+            #     recspeeds = rec[4].split(',')
+            #     sendrec[0] = rectime
+            #     cc = 1
+            #     print(rec)
+            #     for device in devices_list:
+            #         ii = 0
+            #         for imei in recimeis:
+            #             if device == imei:
+            #                 sendrec[cc], sendrec[cc + 1] = gps_conversion(str(reclongitudes[ii]), str(reclatitude[ii]))
+            #                 sendrec[cc + 2] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+            #                 print(reclongitudes[ii] + "," + reclatitude[ii] + "," + recspeeds[ii])
+            #             ii = ii + 1
+            #         cc = cc + 3
+            #     print(sendrec)
+            #     sendlist.append(sendrec)
+
+            page = request.query_params.get('page', '1')
+            count = request.query_params.get('count', 100)
+            print(page)
+            paginator = Paginator(data, count)
+            try:
+                data_page = paginator.page(page)
+            except PageNotAnInteger:
+                data_page = paginator.page(1)
+            except EmptyPage:
+                data_page = paginator.page(paginator.num_pages)
+            for rec in data_page:
                 sendrec = [""] * (len(devices_list) * 3 + 1)
                 rectime = rec[0] + delta
                 recimeis = rec[1].split(',')
@@ -939,12 +1139,23 @@ class AppTestRecordLocationListApiView(APIView):
                     cc = cc + 3
                 print(sendrec)
                 sendlist.append(sendrec)
-
+            create_history_record(username, '查询测量记录 %s 经纬度详情' % test_record.remarks)
             return JsonResponse({
                 "error_no": 0,
                 "all_test_record": sendlist,
                 "start_time": start_time,
-                "end_time": end_time
+                "end_time": end_time,
+                "total": paginator.num_pages
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except TestRecord.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个记录"
             })
         except Exception as e:
             print(e)
