@@ -286,7 +286,7 @@ class LogoutView(View):
         # return HttpResponse('退出成功')
 
 
-class AppLogoutView(View):
+class LogoutApiView(View):
     def get(self, request):
         # create_history_record(request.user, "退出登录")
         logout(request)
@@ -706,13 +706,14 @@ class UserInfoApiView(APIView):
             password = request.data.get("password")
             if not password:
                 password = '123456'
-            company_id = request.data.get("company_id")
+            company_name = request.data.get("company_name")
             perm = request.data.get("permission")
 
             user = UserProfile.objects.get(username=username)
             permission = user.permission
 
             if permission == 'superadmin':
+                company_id = CompanyModel.objects.get(company_name=company_name).id
                 UserProfile.objects.create_user(username=newusername, password=password, mobile=phone,
                                                 company_id=company_id, permission=perm)
             elif permission == 'admin':
@@ -728,6 +729,11 @@ class UserInfoApiView(APIView):
             return JsonResponse({
                 "error_no": -2,
                 "info": "没有这个用户"
+            })
+        except CompanyModel.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个公司"
             })
         except Exception as e:
             print(e)
@@ -757,7 +763,7 @@ class UserInfoApiView(APIView):
                                       "修改用户%s权限为%s" % (modify_user.username, modify_user.get_permission_display()))
                 return JsonResponse({"error_no": 0, "info": "Success"})
             elif permission == 'admin':
-                company_id = request.user.company.id
+                company_id = user.company.id
                 modify_user = UserProfile.objects.get(username=modify_username, company_id=company_id)
                 modify_user.permission = perm
                 modify_user.save()
@@ -793,7 +799,7 @@ class UserInfoApiView(APIView):
                 create_history_record(username, "删除用户" + delete_username)
                 return JsonResponse({"error_no": 0, "info": "Success"})
             elif admin_permission == 'admin':
-                company_id = request.user.company.id
+                company_id = admin_user.company.id
                 del_user = UserProfile.objects.get(username=delete_username, company_id=company_id)
                 if del_user and del_user.permission != 'admin':
                     del_user.delete()
