@@ -187,16 +187,20 @@ def gps_map(location):
 
 def gps_conversion(longitude, latitude):
     # print(longitude.split('.'))
-    longitude1 = longitude.split('.')[0][:3]
-    longitude2 = str(int((int("".join(longitude[3:].split('.'))) / 60)))
-    longitude = longitude1 + '.' + longitude2
+    longitude1 = float(longitude.split('.')[0][:3])
+    longitude2 = float((float(longitude[3:]) / 60))
+    longitude = longitude1 + longitude2
+    # print(longitude1)
+    # print(longitude2)
     # print(longitude)
 
-    latitude1 = latitude.split('.')[0][:2]
-    latitude2 = str(int((int("".join(latitude[2:].split('.'))) / 60)))
-    latitude = latitude1 + '.' + latitude2
+    latitude1 = float(latitude.split('.')[0][:2])
+    latitude2 = float((float(latitude[2:]) / 60))
+    latitude = latitude1 + latitude2
+    # print(latitude1)
+    # print(latitude2)
     # print(latitude)
-    return wgs84_to_gcj02(float(longitude), float(latitude))
+    return wgs84_to_gcj02(longitude, latitude)
 
 
 def check_one_net_data(value):
