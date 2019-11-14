@@ -7,7 +7,7 @@ from fabvenv import virtualenv
 # 登录用户和主机名：
 env.user = 'ubuntu'
 env.password = 'Cmx170904'
-env.hosts = ['111.230.246.188']
+env.hosts = ['106.54.217.74']
 pack_name = 'deploypack_river_ball.tar.gz'
 
 
@@ -27,11 +27,9 @@ def deploy():
     ' 定义一个部署任务 '
     tag = datetime.now().strftime('%y.%m.%d_%H.%M.%S')
     print(env.host)
-    hosttag = ''
     remote_work_dir = ''
-    if env.host == '111.230.246.188':
-        remote_work_dir = '/home/ubuntu/www/river_ball/'
-        hosttag = 'mx'
+    if env.host == '106.54.217.74':
+        remote_work_dir = '/home/ubuntu/river_ball/'
     else:
         exit(1)
 
@@ -43,16 +41,16 @@ def deploy():
     # back_tar_name = '/home/ubuntu/www/backup/cmxsite_backup_%s.tar.gz' % tag
     # run('tar -czvf %s /home/ubuntu/www/cmxsite/*' % back_tar_name)
     # 删除原有工程
-    #run('rm -rf /home/ubuntu/www/cmxsite/*')
+    # run('rm -rf /home/ubuntu/www/cmxsite/*')
     # 解压：
     run('tar -xzvf %s -C %s' % (remote_tmp_tar, remote_work_dir))
-    run('mv %sother/settings_%s.py %s/river_ball/settings.py' % (remote_work_dir, hosttag, remote_work_dir))
-    run('mv %sother/ball_nginx_%s.conf %s/river_ball_nginx.conf' % (remote_work_dir, hosttag, remote_work_dir))
-    run('mv %sother/ball_uwsgi_%s.ini %s/river_ball_uwsgi.ini' % (remote_work_dir, hosttag, remote_work_dir))
-    run('mv %sother/uwsgi_params_%s %s/uwsgi_params' % (remote_work_dir, hosttag, remote_work_dir))
+    run('mv %sother/settings.py %s/river_ball/settings.py' % (remote_work_dir, remote_work_dir))
+    run('mv %sother/ball_nginx.conf %s/river_ball_nginx.conf' % (remote_work_dir, remote_work_dir))
+    run('mv %sother/ball_uwsgi.ini %s/river_ball_uwsgi.ini' % (remote_work_dir, remote_work_dir))
+    run('mv %sother/uwsgi_params %s/uwsgi_params' % (remote_work_dir, remote_work_dir))
     run('rm -rf %sother' % remote_work_dir)
     with cd(remote_work_dir):
-        with virtualenv('/home/ubuntu/www/river_ball/kkwork'):
+        with virtualenv('/home/ubuntu/river_ball/kkwork'):
             run('python manage.py makemigrations')
             run('python manage.py migrate')
             run('chmod a+x ./restart.sh')
