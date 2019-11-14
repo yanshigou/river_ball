@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import connection
+import json
 
 
 class SelectDevice(LoginRequiredMixin, View):
@@ -26,7 +27,7 @@ class SelectDevice(LoginRequiredMixin, View):
         else:
             try:
                 company = request.user.company.company_name
-                # print(company)
+                print(company)
             except Exception as e:
                 print(e)
                 return render(request, 'select_device.html', {
@@ -267,10 +268,199 @@ class LocationInfoView(LoginRequiredMixin, View):
             })
 
 
+class RecordLocationInfoView(LoginRequiredMixin, View):
+    def get(self, request, record_id):
+
+        permission = request.user.permission
+        print(permission)
+        print(record_id)
+        test_record = TestRecord.objects.get(id=record_id)
+
+        delta = timedelta(hours=8)
+        start_time = test_record.start_time
+        end_time = test_record.end_time
+        device_list_str = test_record.devices_id
+        devices_list = device_list_str.split(',')
+
+        sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(speed) as speeds from  \
+            data_info_locationinfo where imei_id in(" + device_list_str + ") \
+            and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+            and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+            group by time order by time;"
+        # print(sql)
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            # print(data)
+        sendlist = list()
+
+        for rec in data:
+            dc = len(devices_list)
+            sendrec = [""] * (dc + 1)
+            rectime = rec[0] + delta
+            recimeis = rec[1].split(',')
+            recspeeds = rec[2].split(',')
+            sendrec[0] = rectime
+            cc = 0
+            for dd in devices_list:
+                ii = 0
+                for im in recimeis:
+                    if dd == im:
+                        sendrec[cc + 1] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                    ii = ii + 1
+                cc = cc + 1
+            # print(sendrec)
+            sendlist.append(sendrec)
+        devs = DevicesInfo.objects.filter(id__in=devices_list)
+        devlist = DevicesInfoSerializer(devs, many=True)
+        # print(a)
+        return render(request, 'record_location_infos.html', {
+            "location_data": sendlist,
+            "start_time": start_time,
+            "end_time": end_time,
+            "desc_list": devlist.data
+        })
+
+
+class RecordTrackView(LoginRequiredMixin, View):
+    def get(self, request, record_id):
+
+        permission = request.user.permission
+        print(permission)
+        print(record_id)
+        test_record = TestRecord.objects.get(id=record_id)
+
+        delta = timedelta(hours=8)
+        start_time = test_record.start_time
+        end_time = test_record.end_time
+        device_list_str = test_record.devices_id
+        devices_list = device_list_str.split(',')
+
+        sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(longitude) as longitudes,\
+                GROUP_CONCAT(latitude) as latitudes,GROUP_CONCAT(speed) as speeds from  \
+                data_info_locationinfo where imei_id in(" + device_list_str + ") \
+                and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+                and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+                group by time order by time;"
+        # print(sql)
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            # print(data)
+        sendlist = list()
+
+        for rec in data:
+            # dc = len(devices_list)
+            sendrec = [""] * (len(devices_list) * 3 + 1)
+            rectime = rec[0] + delta
+            recimeis = rec[1].split(',')
+            reclongitudes = rec[2].split(',')
+            reclatitude = rec[3].split(',')
+            recspeeds = rec[4].split(',')
+            sendrec[0] = rectime.strftime("%Y-%m-%d %H:%M:%S")
+            cc = 1
+            for dd in devices_list:
+                ii = 0
+                for im in recimeis:
+                    if dd == im:
+                        sendrec[cc], sendrec[cc + 1] = gps_conversion(str(reclongitudes[ii]), str(reclatitude[ii]))
+                        sendrec[cc + 2] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                    ii = ii + 1
+                cc = cc + 3
+            # print(sendrec)
+            sendlist.append(sendrec)
+        devs = DevicesInfo.objects.filter(id__in=devices_list)
+        devlist = DevicesInfoSerializer(devs, many=True)
+        # s_e_point = [str(sendlist[0][1]), str(sendlist[0][2])]
+        # for i in enumerate(devices_list):
+        #     print(i)
+        #     if sendlist[0][1 + 3 * i[0]] != "":
+        #         s_e_point = [str(sendlist[0][1 + i[0] * 3]), str(sendlist[0][2 + i[0] * 3])]
+        #         break
+        # print(sendlist[0])
+        # print(s_e_point)
+        # json_name = datetime.now().strftime('%Y%m%d%H%M%S')
+        # filename = 'media/path/' + json_name + '.json'
+        json_list = list()
+        devcount = 0
+        for dev in devlist.data:
+            dict_path = dict()
+            dict_path["name"] = dev["imei"]
+            json_list.append(dict_path)
+            path_list = list()
+            for ix in enumerate(sendlist):
+                if sendlist[ix[0]][1 + devcount * 3] != "" and sendlist[ix[0]][1 + devcount * 3] != "0":
+                    path_list.append([sendlist[ix[0]][1 + devcount * 3], sendlist[ix[0]][2 + devcount * 3]])
+            dict_path["path"] = path_list
+            devcount = devcount + 1
+        return render(request, 'recordtrack.html', {
+            "json_data": json.dumps(json_list),
+            "start_time": start_time,
+            "end_time": end_time,
+            "desc_list": json.dumps(devlist.data)
+        })
+
+
+class RecordStatisticalView(LoginRequiredMixin, View):
+
+    def get(self, request, record_id):
+        permission = request.user.permission
+        print(permission)
+        print(record_id)
+        test_record = TestRecord.objects.get(id=record_id)
+
+        delta = timedelta(hours=8)
+        start_time = test_record.start_time
+        end_time = test_record.end_time
+        device_list_str = test_record.devices_id
+        devices_list = device_list_str.split(',')
+
+        sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(speed) as speeds from  \
+            data_info_locationinfo where imei_id in(" + device_list_str + ") \
+            and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+            and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+            group by time order by time;"
+        # print(sql)
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            # print(data)
+        sendlist = list()
+
+        for rec in data:
+            dc = len(devices_list)
+            sendrec = [""] * (dc + 1)
+            rectime = rec[0] + delta
+            recimeis = rec[1].split(',')
+            recspeeds = rec[2].split(',')
+            sendrec[0] = rectime.strftime("%Y-%m-%d %H:%M:%S")
+            cc = 0
+            for dd in devices_list:
+                ii = 0
+                for im in recimeis:
+                    if dd == im:
+                        sendrec[cc + 1] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                    ii = ii + 1
+                cc = cc + 1
+            # print(sendrec)
+            sendlist.append(sendrec)
+        devs = DevicesInfo.objects.filter(id__in=devices_list)
+        devlist = DevicesInfoSerializer(devs, many=True)
+        print(len(sendlist))
+        create_history_record(request.user, '查看图形统计')
+        return render(request, 'statistical.html', {
+            "location_data": sendlist,
+            "start_time": start_time,
+            "end_time": end_time,
+            "desc_list": json.dumps(devlist.data)
+        })
+
+
 class AppLocationInfoView(APIView):
     """
     共用单个设备数据查询
     """
+
     def post(self, request):
         try:
             username = request.META.get('HTTP_USERNAME')
@@ -286,8 +476,9 @@ class AppLocationInfoView(APIView):
                                                              time__lte=end_time2).order_by('-time')
             else:
                 company_id = user.company_id
-                location_infos= LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
-                                                            time__lte=end_time2, imei__company_id=company_id).order_by('-time')
+                location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                             time__lte=end_time2, imei__company_id=company_id).order_by(
+                    '-time')
             page = request.data.get('page', '1')
             print(page)
             paginator = Paginator(location_infos, 20)
@@ -355,8 +546,8 @@ class ExportLocationInfoView(View):
             start_time = request.POST.get('start_time', '')
             end_time = request.POST.get('end_time', '')
             imei_id = request.POST.get('imei_id', '')
-            # print(start_time)
-            # print(end_time)
+            print(start_time)
+            print(end_time)
             # print(imei_id)
             start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
             end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
@@ -376,13 +567,15 @@ class ExportLocationInfoView(View):
                             datetime.strptime(i['time'], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                     if i['speed']:
                         i['speed'] = float('%0.2f' % (float(i['speed']) * 0.5144444))
-                    if i['longitude'] and i['latitude']:
-                        i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
+                    # daijian 191112 导出原始坐标
+                    # if i['longitude'] and i['latitude']:
+                    #     i['longitude'], i['latitude'] = gps_conversion(i['longitude'], i['latitude'])
                     if i['power'] and len(i['power']) > 4:
                         i['power'] = float('%0.2f' % (float(i['power'][3:]) * 0.001))
                     data = [
-                        i['imei'], i['time'], i['longitude'], i['latitude'], i['altitude'], i['speed'], i['accuracy'],
-                        i['power'], i['satellites'], i['direction']
+                        i['imei'], i['time'], i['longitude'], i['latitude'], i['direction'], i['speed'], i['altitude'],
+                        i['accuracy'],
+                        i['power'], i['satellites']
                     ]
 
                     location_datas.append(data)
@@ -391,8 +584,10 @@ class ExportLocationInfoView(View):
                     # print(location_datas)
                     now = datetime.now()
                     name = datetime.strftime(now, '%m-%d-%H-%M-%S')
-                    filename = 'media/excel/location_data_' + name + '.xlsx'
-                    file = '流速球数据' + name + '.xlsx'
+                    stime = datetime.strftime(datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S'), '%m%d%H%M')
+                    etime = datetime.strftime(datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S'), '%m%d%H%M')
+                    filename = 'media/excel/' + imei + '_' + stime + '_' + etime + '.xlsx'
+                    file = '流速球数据' + stime + '.xlsx'
                     export_excel(location_datas, '流速球数据', filename)
                     create_history_record(request.user, '流速球数据导出Excel：%s' % file)
                     return JsonResponse({
@@ -768,6 +963,7 @@ class TestRecordDoneView(View):
     """
     测量数据-已完成查询
     """
+
     def post(self, request):
         try:
             username = request.META.get('HTTP_USERNAME')
@@ -861,6 +1057,7 @@ class TestRecordNotDoneView(View):
     """
     测量数据-正在测量查询
     """
+
     def post(self, request):
         try:
             username = request.META.get('HTTP_USERNAME')

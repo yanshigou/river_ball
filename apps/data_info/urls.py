@@ -5,7 +5,8 @@ from django.conf.urls import url
 from .views import LocationInfoView, SelectDevice, UploadLocationInfoView, StatisticalToOneView, LocationTrackView
 from .views import OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
     Select2Device, AppStartTestRecordView, AppEndTestRecordView, TestRecordDoneView, TestRecordNotDoneView, \
-    AppTestRecordSpeedListApiView, AppTestRecordLocationListApiView
+    AppTestRecordSpeedListApiView, AppTestRecordLocationListApiView, RecordLocationInfoView, \
+    RecordTrackView, RecordStatisticalView
 
 urlpatterns = [
     url(r'^selectDevice/$', SelectDevice.as_view(), name='select_device'),
@@ -18,6 +19,10 @@ urlpatterns = [
     url(r'^statistical/(?P<imei_id>\d+)/$', StatisticalToOneView.as_view(), name='statistical'),
     url(r'^track/(?P<imei_id>\d+)/(?P<start_time>.*)/(?P<end_time>.*)$', LocationTrackView.as_view(), name='track'),
 
+    url(r'^recordLocationInfo/(?P<record_id>\d+)/$', RecordLocationInfoView.as_view(), name='record_location_info'),
+    url(r'^recordTrack/(?P<record_id>\d+)/$', RecordTrackView.as_view(), name='record_track'),
+    url(r'^recordStatistical/(?P<record_id>\d+)/$', RecordStatisticalView.as_view(), name='record_statistical'),
+
     url(r'^appStartTestRecord/$', AppStartTestRecordView.as_view()),
     url(r'^appEndTestRecord/$', AppEndTestRecordView.as_view()),
     url(r'^testRecordDone/$', TestRecordDoneView.as_view()),
@@ -27,6 +32,3 @@ urlpatterns = [
     url(r'^locationInfo/$', AppLocationInfoView.as_view()),
 
 ]
-
-
-
