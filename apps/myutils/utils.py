@@ -230,13 +230,13 @@ def one_net_register(imei):
 def export_excel(location_infos, sheet_info, filename):
     print('utils excel')
 
-    title = ['设备序列号', '采集时间', '经度', '纬度', '海拔/米', '速度 m/s', '测量精度', '当前电压(V)', '卫星数量', '方向']
+    title = ['设备序列号', '采集时间', '经度', '纬度', '方向', '速度 m/s', '海拔/米', '测量精度', '当前电压(V)', '卫星数量']
 
     f = xlsxwriter.Workbook(filename)
     fsheet = f.add_worksheet(sheet_info)
     # 首行格式
     format1 = f.add_format({
-        'bold': True, 'font_color': 'black', 'font_size': 15, 'align': 'center', 'font_name': '宋体'
+        'bold': True, 'font_color': 'black', 'font_size': 13, 'align': 'center', 'font_name': '宋体'
     })
     # 内容格式
     format2 = f.add_format({'font_color': 'black', 'font_size': 12, 'align': 'center', 'font_name': '宋体'})
