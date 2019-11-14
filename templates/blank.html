@@ -10,7 +10,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>流速球后台管理系统 - {% block title %}首页{% endblock %}</title>
+    <title>流速球管理系统 - {% block title %}首页{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'images/favicon.ico' %}">
     <!-- Custom fonts for this template-->
     <link href="{% static 'vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet" type="text/css">
@@ -35,7 +35,7 @@
         <!-- Sidebar - Brand -->
         <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'index' %}">
             <img src="{% static 'images/favicon.ico' %}" alt="" style="width: 40px; height: 40px">
-            <div class="sidebar-brand-text mx-0">流速球后台管理系统</div>
+            <div class="sidebar-brand-text mx-0 " style = "padding-left: 10px;">流速球管理系统</div>
         </a>
 
         <!-- Divider -->
@@ -45,7 +45,7 @@
         <li {% if request.path == '/' %}class="nav-item active table-active" {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'index' %}">
                 <i class="fas fa-fw fa-desktop"></i>
-                <span style="font-size: 20px">主页</span></a>
+                <span style="font-size: 15px">主页</span></a>
         </li>
 
         <!-- Divider -->
@@ -55,18 +55,19 @@
         <!-- Heading -->
 
         <!-- Nav Item - Pages Collapse Menu -->
-        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/statistical' in request.path %}class="nav-item active table-active"
+        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/statistical' in request.path or 'dataInfo/locationInfo' in request.path%}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select_device' %}">
                 <i class="fas fa-fw fa-info"></i>
-                <span style="font-size: 20px">监控</span>
+                <span style="font-size: 15px">设备数据</span>
             </a>
         </li>
-        <li {% if 'dataInfo/select2Device' in request.path  %}class="nav-item active table-active"
+        <hr class="sidebar-divider">
+        <li {% if 'dataInfo/select2Device' in request.path  or 'dataInfo/recordLocationInfo' in request.path or 'dataInfo/recordStatistical' in request.path  %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select2_device' %}">
                 <i class="fas fa-fw fa-tags"></i>
-                <span style="font-size: 20px">测量记录</span>
+                <span style="font-size: 15px">测量记录</span>
             </a>
         </li>
 {#        <li {% if 'dataInfo/uploadFile' in request.path %}class="nav-item active table-active"#}
@@ -115,18 +116,18 @@
         <!-- Heading -->
 
         <!-- Nav Item - Charts -->
-        <li {% if 'devices/info' in request.path or 'dataInfo/locationInfo' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
+        <li {% if 'devices/info' in request.path or 'devices/deviceModify' in request.path or 'devices/deviceAdd' in request.path or 'devices/deviceStatus' in request.path or "devices/deviceView" in request.path %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'devices_info' %}">
                 <i class="fas fa-fw fa-baseball-ball"></i>
-                <span style="font-size: 20px">设备管理</span></a>
+                <span style="font-size: 15px">设备管理</span></a>
         </li>
-        <hr class="sidebar-divider">
-        <li class="nav-item">
+        {% comment %} <hr class="sidebar-divider"> {% endcomment %}
+        {% comment %} <li class="nav-item">
             <a class="nav-link" href="{% url 'show_map' %}">
                 <i class="fas fa-fw fa-map-marker"></i>
-                <span style="font-size: 20px">地图展示</span></a>
-        </li>
+                <span style="font-size: 15px">地图展示</span></a>
+        </li> {% endcomment %}
 
         {#        {% if request.user.permission == "superadmin" or request.user.permission == "admin"%}#}
         {#            <li {% if 'devices/ledBind' in request.path %}class="nav-item active table-active"#}
@@ -166,11 +167,11 @@
             {#                </li>#}
             {#            {% endif %}#}
 
-            <li {% if 'users/allUsers' in request.path or "users/changePermission" in request.path or "users/register2" in request.path %}class="nav-item active table-active"
+            <li {% if 'users/allUsers' in request.path or "users/changePermission" in request.path or "users/register/" in request.path  or "users/register2" in request.path %}class="nav-item active table-active"
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'all_users' %}">
                     <i class="fas fa-fw fa-user"></i>
-                    <span style="font-size: 20px">用户管理</span></a>
+                    <span style="font-size: 15px">用户管理</span></a>
             </li>
         {% endif %}
         {% if request.user.permission == "superadmin" %}
@@ -178,7 +179,7 @@
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'company_info' %}">
                     <i class="fas fa-fw fa-house-damage"></i>
-                    <span style="font-size: 20px">公司管理</span></a>
+                    <span style="font-size: 15px">公司管理</span></a>
             </li>
         {% endif %}
 
@@ -216,7 +217,7 @@
 
             <!-- Topbar -->
             <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                <h1 class="h3 mb-4 text-gray-800" style="margin-top: 21px;">{% block topbar_title %}
+                <h1 class="h5 mb-4 text-gray-700" style="margin-top: 21px;">{% block topbar_title %}
                     主页{% endblock %}</h1>
                 <!-- Sidebar Toggle (Topbar) -->
                 <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
@@ -344,7 +345,7 @@
 
             <!-- Begin Page Content -->
             {% block page_content %}
-                <iframe src="{% url 'show_map' %}" width="100%" height="750px" frameborder="0">
+                <iframe src="{% url 'show_map' %}" width="100%" height="750px" frameborder="0"  style="font-size:14px">
                  </iframe>
             {% endblock %}
             <!-- /.container-fluid -->
@@ -356,7 +357,7 @@
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
                 <div class="copyright text-center my-auto">
-                    <span>Copyright &copy; 重庆长毛象科技有限公司 2019</span>
+                    <span>Copyright &copy; 无锡海鹰加科海洋电子有限公司 2019</span>
                 </div>
             </div>
         </footer>
