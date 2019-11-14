@@ -980,12 +980,12 @@ class AppTestRecordSpeedListApiView(APIView):
                 data_info_locationinfo where imei_id in(" + device_list_str + ") \
                 and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
                 and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
-                group by time order by time desc;"
+                group by time order by time;"
             # print(sql)
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 data = cursor.fetchall()
-                print(data)
+                # print(data)
             sendlist = list()
             # for rec in data:
             #     dc = len(devices_list)
@@ -1080,7 +1080,7 @@ class AppTestRecordLocationListApiView(APIView):
                 data_info_locationinfo where imei_id in(" + device_list_str + ") \
                 and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
                 and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
-                group by time order by time desc;"
+                group by time order by time;"
             with connection.cursor() as cursor:
                 cursor.execute(sql)
                 data = cursor.fetchall()
@@ -1127,17 +1127,17 @@ class AppTestRecordLocationListApiView(APIView):
                 recspeeds = rec[4].split(',')
                 sendrec[0] = rectime
                 cc = 1
-                print(rec)
+                # print(rec)
                 for device in devices_list:
                     ii = 0
                     for imei in recimeis:
                         if device == imei:
                             sendrec[cc], sendrec[cc + 1] = gps_conversion(str(reclongitudes[ii]), str(reclatitude[ii]))
                             sendrec[cc + 2] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
-                            print(reclongitudes[ii] + "," + reclatitude[ii] + "," + recspeeds[ii])
+                            # print(reclongitudes[ii] + "," + reclatitude[ii] + "," + recspeeds[ii])
                         ii = ii + 1
                     cc = cc + 3
-                print(sendrec)
+                # print(sendrec)
                 sendlist.append(sendrec)
             create_history_record(username, '查询测量记录 %s 经纬度详情' % test_record.remarks)
             return JsonResponse({

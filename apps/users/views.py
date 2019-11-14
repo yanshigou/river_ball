@@ -6,7 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.shortcuts import render
 from rest_framework.views import APIView
 from .forms import RegisterForm, LoginForm, UploadImageForm, UserInfoForm, PasswordForm, CompanySerializer, \
-    UserProfileSerializer
+    UserProfileSerializer, MessageSerializer
 from .models import UserProfile, HistoryRecord, Message, CompanyModel
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, make_message
@@ -953,6 +953,58 @@ class CompanyApiView(APIView):
             return JsonResponse({
                 "error_no": -2,
                 "info": "没有这个公司"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+
+class MessageApiView(APIView):
+
+    def get(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            all_message = Message.objects.filter(username__username=username)
+            message_ser = MessageSerializer(all_message, many=True)
+
+            return JsonResponse({
+                "error_no": 0,
+                "info": "Success",
+                "data": message_ser.data
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
+
+    def post(self, request):
+        try:
+            username = request.META.get("HTTP_USERNAME")
+            msg_id = request.data.get('msg_id')
+            all_read = request.data.get('all_read')
+            if all_read == "1" and not msg_id:
+                Message.objects.filter(username__username=username).update(has_read=True)
+            else:
+                message = Message.objects.get(username__username=username, id=msg_id)
+                message.has_read = True
+                message.save()
+            return JsonResponse({
+                "error_no": 0
+            })
+        except Message.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个消息"
             })
         except Exception as e:
             print(e)

@@ -2,7 +2,7 @@
 __author__ = "dzt"
 __date__ = "2019/9/4"
 from django import forms
-from users.models import UserProfile, CompanyModel
+from users.models import UserProfile, CompanyModel, Message
 from rest_framework import serializers
 
 
@@ -47,3 +47,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ('id', 'username', 'mobile', 'permission', 'company_id', 'company_name')
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+
+    class Meta:
+        model = Message
+        fields = '__all__'
