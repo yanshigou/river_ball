@@ -1,0 +1,229 @@
+<!doctype html>
+{% load staticfiles %}
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>轨迹回放</title>
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+        }
+
+        .input-card .btn{
+            margin-right: 1.2rem;
+            width: 9rem;
+        }
+
+        .input-card .btn-sm {
+            margin-right: 1.2rem;
+            width: 3.5rem;
+        }
+
+        .input-card .btn:last-child {
+            margin-right: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <div class="input-card">
+        <h4>轨迹回放控制</h4>
+        <div class="input-item">
+            <input type="button" class="btn" value="开始动画" id="start" />
+            <input type="button" class="btn" value="暂停动画" id="pause" />
+        </div>
+        <div class="input-item">
+            <input type="button" class="btn" value="继续动画" id="resume"  />
+            <input type="button" class="btn" value="停止动画" id="stop" />
+        </div>
+        <div>
+            <input type="button" class="btn btn-sm" value="X1倍" id="speed1" />
+            <input type="button" class="btn btn-sm" value="X2倍" id="speed2"/>
+            <input type="button" class="btn btn-sm" value="X5倍" id="speed5"/>
+            <input type="button" class="btn btn-sm" value="X10倍" id="speed10"/>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=5cda232d2d1f782a634096167304eb59">
+    </script>
+    <script src="//webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
+    <script type="text/javascript">
+
+        var dev_list = {{desc_list | safe}};
+        console.log(dev_list.length);
+        var devlen = dev_list.length;
+        //创建地图
+        var map = new AMap.Map('container', {
+            zoom: 4
+        });
+
+        
+        
+        AMapUI.load(['ui/misc/PathSimplifier', 'lib/$'], function (PathSimplifier, $)  {
+
+            if (!PathSimplifier.supportCanvas) {
+                alert('当前环境不支持 Canvas！');
+                return;
+            }
+
+            //just some colors
+            var colors = [
+                "#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00",
+                "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707",
+                "#651067", "#329262", "#5574a6", "#3b3eac"
+            ];
+
+            var pathSimplifierIns = new PathSimplifier({
+                zIndex: 100,
+                //autoSetFitView:false,
+                map: map, //所属的地图实例
+
+                getPath: function (pathData, pathIndex) {
+
+                    return pathData.path;
+                },
+                getHoverTitle: function (pathData, pathIndex, pointIndex) {
+
+                    if (pointIndex >= 0) {
+                        //point 
+                        return pathData.name + '，点：' + pointIndex + '/' + pathData.path.length;
+                    }
+
+                    return pathData.name + '，点数量' + pathData.path.length;
+                },
+                renderOptions: {
+                    pathLineStyle: {
+                        dirArrowStyle: true
+                    },
+                    getPathStyle: function (pathItem, zoom) {
+
+                        var color = colors[pathItem.pathIndex % colors.length],
+                            lineWidth = Math.round(2 * Math.pow(1.1, zoom - 3));
+
+                        return {
+                            pathLineStyle: {
+                                strokeStyle: color,
+                                lineWidth: lineWidth
+                            },
+                            pathLineSelectedStyle: {
+                                lineWidth: lineWidth + 2
+                            },
+                            pathNavigatorStyle: {
+                                fillStyle: color
+                            }
+                        };
+                    }
+                }
+            });
+
+            window.pathSimplifierIns = pathSimplifierIns;
+
+            $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+
+            //$.getJSON('/media/path/'+{{json_name}}+'.json', function(d) {
+
+            $('#loadingTip').remove();
+
+            var obj = {{json_data | safe}};
+            console.log(obj);
+            pathSimplifierIns.setData(obj);
+
+            function onload() {
+                pathSimplifierIns.renderLater();
+            }
+
+            function onerror(e) {
+                alert('图片加载失败！');
+            }
+
+            var btnStart = document.getElementById("start");
+            btnStart.onclick = startAnimation;
+            var btnPause = document.getElementById("pause");
+            btnPause.onclick = pauseAnimation;
+            var btnResume = document.getElementById("resume");
+            btnResume.onclick = resumeAnimation;
+            var btnStop = document.getElementById("stop");
+            btnStop.onclick = stopAnimation;
+
+            var btnSpeed1 = document.getElementById("speed1");
+            btnSpeed1.onclick = adjSpeed1;
+            var btnSpeed2 = document.getElementById("speed2");
+            btnSpeed2.onclick = adjSpeed2;
+            var btnSpeed5 = document.getElementById("speed5");
+            btnSpeed5.onclick = adjSpeed5;
+            var btnSpeed10 = document.getElementById("speed10");
+            btnSpeed10.onclick = adjSpeed10;
+            
+            var navarray = new Array(devlen);
+
+            for (i = 0; i < devlen; i++) { 
+                var navgi = pathSimplifierIns.createPathNavigator(i, {
+                    loop: false, //循环播放
+                    speed: 500
+                }); 
+                navarray[i] = navgi;
+            }
+
+            //navg1.start();
+            function startAnimation() {
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].start();
+                }
+                
+            }
+
+            function pauseAnimation() {
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].pause();
+                }
+            }
+
+            function resumeAnimation() {
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].resume();
+                }
+            }
+
+            function stopAnimation() {
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].stop();
+                }
+            }
+
+            function adjSpeed1(){
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].setSpeed(500);
+                }
+            }
+
+            function adjSpeed2(){
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].setSpeed(1000);
+                }
+            }
+
+            function adjSpeed5(){
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].setSpeed(2500);
+                }
+            }
+
+            function adjSpeed10(){
+                for (i = 0; i < devlen; i++) { 
+                    navarray[i].setSpeed(5000);
+                }
+            }
+        });
+
+        
+    </script>
+</body>
+
+</html>
