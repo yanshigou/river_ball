@@ -52,6 +52,7 @@
                         <tr>
                             <th>ID</th>
                             <th>公司</th>
+                            <th>管理员</th>
                             <th>操作</th>
                         </tr>
                         </thead>
@@ -59,6 +60,7 @@
                         <tr>
                             <th>ID</th>
                             <th>公司</th>
+                            <th>管理员</th>
                             <th>操作</th>
                         </tr>
                         </tfoot>
@@ -67,6 +69,15 @@
                             <tr>
                                 <td>{{ c.id }}</td>
                                 <td>{{ c.company_name }}</td>
+                                <td>
+                                    {% for user in all_admin_user %}
+                                        {% if c.company_name == user.company.company_name %}
+                                            {{ user.username }}
+                                        {% else %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+
                                 <td>
 {#                                        <a href="{% url 'device_view' device.imei.id %}">#}
 {#                                            <button type="button" class="btn btn-success" style="line-height: 1">查看#}
