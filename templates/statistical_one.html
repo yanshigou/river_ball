@@ -1,10 +1,10 @@
 {% extends 'blank.html' %}
 {% load staticfiles %}
 {% block title %}
-    流速球数据图形统计
+    流速球速度折线图
 {% endblock %}
 {% block topbar_title %}
-    流速球数据图形统计：{{ imei }}
+    流速球速度折线图：{{ imei }}
 {% endblock %}
 {% block other_css %}
     <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
@@ -21,7 +21,12 @@
 {% endblock %}
 
 {% block page_content %}
-    <div class="container-fluid">
+    <div class="container-fluid" style="font-size:14px">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'devices_info' %}">设备数据</a></li>
+        <li class="breadcrumb-item active">数据统计</li>
+    </ol>
         <form action="" method="post" id="filterDataForm">
             <p>
                 日期选项：
@@ -34,10 +39,10 @@
 
             <p id="all_button">
                 <a>
-                    <button type="submit" class="btn btn-primary">筛选</button>
+                    <button type="submit" class="btn btn-primary btn-sm">筛选</button>
                 </a>
                 <a href="">
-                    <button type="button" class="btn btn-primary">重置</button>
+                    <button type="button" class="btn btn-primary btn-sm">重置</button>
                 </a>
 
             </p>
@@ -81,7 +86,7 @@
                     color: ['#3398DB'],
                     title:
                         {
-                            text: '流速球图形统计'
+                            text: '流速球速度折线图'
                         }
                     ,
                     tooltip: {}
