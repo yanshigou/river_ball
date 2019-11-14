@@ -1,10 +1,10 @@
 {% extends 'blank.html' %}
 {% load staticfiles %}
 {% block title %}
-    违停统计
+    测量记录速度走势图
 {% endblock %}
 {% block topbar_title %}
-    违停统计
+    测量记录速度走势图
 {% endblock %}
 {% block other_css %}
     <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
@@ -22,29 +22,17 @@
 
 {% block page_content %}
     <div class="container-fluid">
-        <form action="" method="post" id="filterDataForm">
-            <p>
-                日期选项：
-                <input type="text" class="" id="date_time0" name="start_time"
-                       value="{{ start_time }}">
-                &nbsp;至 &nbsp;
-                <input type="text" class="" id="date_time1" name="end_time"
-                       value="{{ end_time }}">
-            </p>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'select2_device' %}">测量数据</a></li>
+            <li class="breadcrumb-item active">数据统计</li>
+        </ol>
+        测量时间：
+        <span class="label label-info"> {{ start_time }}</span>
+        &nbsp;至 &nbsp;
+        <span class="label label-info"> {{ end_time }}</span>
 
-            <p id="all_button">
-                <a>
-                    <button type="submit" class="btn btn-primary">统计</button>
-                </a>
-                <a href="">
-                    <button type="button" class="btn btn-primary">重置</button>
-                </a>
 
-            </p>
-
-            <p></p>
-            {% csrf_token %}
-        </form>
         <div id="main" style="width: auto;height: 600px;"></div>
     </div>
 
@@ -55,13 +43,40 @@
     <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
     <script src="{% static 'js/defaults-zh_CN.min.js' %}"></script>
     <script type="text/javascript">
+        var dev_list = {{desc_list|safe}};
+        {#console.log(dev_list);#}
+        var namelist = Array();
+        var serieslist = Array();
+
+        var sendlist = {{location_data|safe}};
+        var time_list = Array();
+
+        var speed_list = new Array(dev_list.length);             //声明一维数组
+        for (var x = 0; x < dev_list.length; x++) {
+            speed_list[x] = new Array();        //声明二维数组
+            //for (var y = 0; y < sendlist.length; y++) {
+            //    speed_list[x][y] = 0;          //数组初始化为0
+            //}
+        }
+        for (i = 0; i < sendlist.length; i++) {
+            //console.log(sendlist[i][0]);
+            time_list.push(sendlist[i][0]);
+            for (j = 0; j < dev_list.length; j++) {
+                var speeds = sendlist[i][1 + j];
+                {#console.log(speeds);#}
+                speed_list[j].push(speeds);
+            }
+        }
+        for (j = 0; j < dev_list.length; j++) {
+            namelist.push(dev_list[j].desc);
+            console.log({name: dev_list[j].desc, type: 'line', data: speed_list[j]});
+            console.log(serieslist);
+            serieslist.push({name: dev_list[j].desc, type: 'line', data: speed_list[j]});
+        }
+
         $(function () {
             // 基于准备好的dom，初始化echarts实例
             var myChart = echarts.init(document.getElementById('main'));
-
-            // 指定图表的配置项和数据
-            {#console.log({{ all_address|safe }});#}
-            {#console.log({{ all_address_count|safe }});#}
             var option = {
                     toolbox: {
                         show: true,
@@ -88,16 +103,18 @@
                             }
                         }
                     },
-                    color: ['#3398DB', '#666666', '#57C9DD', '#40DB4A'],
+                    color: ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00",
+                        "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707",
+                        "#651067", "#329262", "#5574a6", "#3b3eac"],
                     title:
                         {
-                            text: '流速球图形统计'
+                            text: '流速球速度走势图'
                         }
                     ,
                     tooltip: {}
                     ,
                     legend: {
-                        data: ['事件', '取证', '短信成功', '入库成功']
+                        data: namelist
                     }
                     ,
                     grid: {
@@ -109,9 +126,11 @@
                     ,
                     xAxis: {
                         type: 'category',
-                        data: {{ time_list|safe }},
+                        data: time_list,
                         axisLabel: {
-                            interval: 0,
+                            interval: 100000,
+                            showMinLabel: true,
+                            showMaxLabel: true,
                             rotate:
                                 40
                         }
@@ -119,33 +138,23 @@
                         axisTick: {
                             alignWithLabel: true
                         }
-                    }
-                    ,
-                    yAxis: {}
-                    ,
-
-                    series: [
+                    },
+                    yAxis: {},
+                    dataZoom: [
                         {
-                            name: '事件',
-                            type: 'line',
-                            data: {{ speed_list|safe }}
+                            show: true,
+                            realtime: true,
+                            start: 0,
+                            end: 100
                         },
                         {
-                            name: "取证",
-                            type: 'line',
-                            data: {{ speed_list|safe }}
-                        },
-                        {
-                            name: "短信成功",
-                            type: 'line',
-                            data: {{ speed_list|safe }}
-                        },
-                        {
-                            name: "入库成功",
-                            type: 'line',
-                            data: {{ speed_list|safe }}
+                            type: 'inside',
+                            realtime: true,
+                            start: 0,
+                            end: 100
                         }
-                    ]
+                    ],
+                    series: serieslist
                 }
             ;
             // 使用刚指定的配置项和数据显示图表。
