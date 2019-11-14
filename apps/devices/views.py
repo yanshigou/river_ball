@@ -75,7 +75,7 @@ class DeviceAddView(LoginRequiredMixin, View):
         print(device_form.errors)
         return JsonResponse({
             "status": "fail",
-            "errors": "设备IMEI号和描述唯一且必填"
+            "errors": "设备IMEI号和昵称唯一且必填"
         })
 
 
