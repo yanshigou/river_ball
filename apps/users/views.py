@@ -464,12 +464,22 @@ class CompanyAddView(LoginRequiredMixin, View):
             return HttpResponseRedirect(reverse("index"))
 
     def post(self, request):
-        company_name = request.POST.get('company_name', "")
         try:
-            CompanyModel.objects.create(company_name=company_name)
-            return JsonResponse({
-                "status": "success"
-            })
+            permission = request.user.permission
+            print(permission)
+            if permission != "superadmin":
+                return JsonResponse({"status": "fail", "errors": "无权限"})
+            serializer = CompanySerializer(data=request.POST)
+            phone = request.POST["phone"]
+            if UserProfile.objects.filter(username=phone).count() > 0:
+                return JsonResponse({"status": "fail", "errors": "该电话号码的用户已经存在"})
+            if serializer.is_valid():
+                newcompany = serializer.save()
+                UserProfile.objects.create_user(username=phone, password=DEFAULT_PASSWORD, company=newcompany,
+                                                permission="admin")
+                create_history_record(request.user, "新建公司%s，管理员%s" % (newcompany.company_name, phone))
+                return JsonResponse({"status": "success"})
+            return JsonResponse({"status": "fail", "errors": "新建公司失败"})
         except Exception as e:
             print(e)
             return JsonResponse({
