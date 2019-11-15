@@ -36,7 +36,7 @@
         {#            <div class="alert"></div>#}
 
         <div class="card-header py-3">
-            {% comment %} <h6 class="m-0 font-weight-bold text-primary">公司详情</h6> {% endcomment %}
+{#            <h6 class="m-0 font-weight-bold text-primary">公司详情</h6>#}
             {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
             <a href="{% url 'company_add' %}">
                 <button type="button" class="btn btn-sm btn-success">新增公司</button>
@@ -54,14 +54,14 @@
                             <th>操作</th>
                         </tr>
                     </thead>
-                    {% comment %} <tfoot>
-                        <tr>
-                            <th>ID</th>
-                            <th>公司</th>
-                            <th>管理员</th>
-                            <th>操作</th>
-                        </tr>
-                    </tfoot> {% endcomment %}
+{#                    <tfoot>#}
+{#                    <tr>#}
+{#                        <th>ID</th>#}
+{#                        <th>公司</th>#}
+{#                        <th>管理员</th>#}
+{#                        <th>操作</th>#}
+{#                    </tr>#}
+{#                    </tfoot>#}
                     <tbody id="t_body">
                         {% for c in all_company %}
                         <tr>

@@ -50,21 +50,21 @@
                             {% endfor %}
                         </tr>
                     </thead>
-                    {% comment %} <tfoot>
-                        <tr>
-                            <th></th>
-                            {% for desc in desc_list %}
-                            <th>{{ desc }}</th>
-                            {% endfor %}
-                        </tr>
-                    </tfoot> {% endcomment %}
+{#                    <tfoot>#}
+{#                    <tr>#}
+{#                        <th></th>#}
+{#                        {% for desc in desc_list %}#}
+{#                            <th>{{ desc }}</th>#}
+{#                        {% endfor %}#}
+{#                    </tr>#}
+{#                    </tfoot>#}
                     <tbody id="t_body">
                         {% for data in location_data %}
                         <tr>
                             <td>{{ data.0 }}</td>
-                            {% comment %} <td>{{ data.1 }}</td>
-                            <td>{{ data.2 }}</td> {% endcomment %}
-                            
+{#                            <td>{{ data.1 }}</td>#}
+{#                            <td>{{ data.2 }}</td>#}
+
                             {% for desc in desc_list %}
                                 {% getMyArr data forloop.counter as speed %}
                                 <td>{{ speed }}</td>

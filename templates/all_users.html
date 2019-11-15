@@ -36,7 +36,7 @@
                 <button type="button" class="btn btn-sm btn-success">新增用户</button>
             </a>
             {% endif %}
-            {% comment %} <h6 class="m-0 font-weight-bold text-primary">用户列表</h6> {% endcomment %}
+{#            <h6 class="m-0 font-weight-bold text-primary">用户列表</h6>#}
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -51,16 +51,16 @@
                             <th>操作</th>
                         </tr>
                     </thead>
-                    {% comment %} <tfoot>
-                        <tr>
-                            <th>用户名</th>
-                            <th>权限</th>
-                            {% if request.user.permission == "superadmin" %}
-                            <th>所属公司</th>
-                            {% endif %}
-                            <th>操作</th>
-                        </tr>
-                    </tfoot> {% endcomment %}
+{#                    <tfoot>#}
+{#                    <tr>#}
+{#                        <th>用户名</th>#}
+{#                        <th>权限</th>#}
+{#                        {% if request.user.permission == "superadmin" %}#}
+{#                            <th>所属公司</th>#}
+{#                        {% endif %}#}
+{#                        <th>操作</th>#}
+{#                    </tr>#}
+{#                    </tfoot>#}
                     <tbody id="t_body">
                         {% for user in all_users %}
                         <tr>

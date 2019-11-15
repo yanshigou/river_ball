@@ -55,7 +55,7 @@
         <!-- Heading -->
 
         <!-- Nav Item - Pages Collapse Menu -->
-        <li {% if 'dataInfo/selectDevice' in request.path or 'dataInfo/statistical' in request.path or 'dataInfo/locationInfo' in request.path%}class="nav-item active table-active"
+        <li {% if 'dataInfo/deviceDataInfo' in request.path or 'dataInfo/statistical' in request.path or 'dataInfo/locationInfo' in request.path%}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select_device' %}">
                 <i class="fas fa-fw fa-info"></i>
@@ -63,7 +63,7 @@
             </a>
         </li>
         <hr class="sidebar-divider">
-        <li {% if 'dataInfo/select2Device' in request.path  or 'dataInfo/recordLocationInfo' in request.path or 'dataInfo/recordStatistical' in request.path  %}class="nav-item active table-active"
+        <li {% if 'dataInfo/recordInfo' in request.path  or 'dataInfo/recordLocationInfo' in request.path or 'dataInfo/recordStatistical' in request.path  %}class="nav-item active table-active"
             {% else %}class="nav-item"{% endif %}>
             <a class="nav-link" href="{% url 'select2_device' %}">
                 <i class="fas fa-fw fa-tags"></i>
@@ -122,12 +122,12 @@
                 <i class="fas fa-fw fa-baseball-ball"></i>
                 <span style="font-size: 15px">设备管理</span></a>
         </li>
-        {% comment %} <hr class="sidebar-divider"> {% endcomment %}
-        {% comment %} <li class="nav-item">
-            <a class="nav-link" href="{% url 'show_map' %}">
-                <i class="fas fa-fw fa-map-marker"></i>
-                <span style="font-size: 15px">地图展示</span></a>
-        </li> {% endcomment %}
+{#        <hr class="sidebar-divider">#}
+{#        <li class="nav-item">#}
+{#            <a class="nav-link" href="{% url 'show_map' %}">#}
+{#                <i class="fas fa-fw fa-map-marker"></i>#}
+{#                <span style="font-size: 15px">地图展示</span></a>#}
+{#        </li>#}
 
         {#        {% if request.user.permission == "superadmin" or request.user.permission == "admin"%}#}
         {#            <li {% if 'devices/ledBind' in request.path %}class="nav-item active table-active"#}
