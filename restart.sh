@@ -1,5 +1,5 @@
 #!/bin/sh
-NAME="walkerfree"
+NAME="uwsgi"
 if [ ! -n "$NAME" ];then
     echo "no arguments"
     exit;
