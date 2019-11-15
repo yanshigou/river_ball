@@ -18,7 +18,7 @@ from django.db import connection
 import json
 
 
-class SelectDevice(LoginRequiredMixin, View):
+class DeviceDataInfoView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
         print(permission)
@@ -42,7 +42,7 @@ class SelectDevice(LoginRequiredMixin, View):
         })
 
 
-class Select2Device(LoginRequiredMixin, View):
+class RecordInfoView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
         print(permission)
@@ -268,6 +268,99 @@ class LocationInfoView(LoginRequiredMixin, View):
             })
 
 
+class LocationPaginatorInfoView(LoginRequiredMixin, View):
+    def get(self, request, imei_id):
+
+        permission = request.user.permission
+        print(permission)
+        now_time = datetime.now().replace(microsecond=0)
+        start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
+        if permission != 'superadmin':
+            device = DevicesInfo.objects.filter(id=imei_id)
+            try:
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+                # print(company)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select_device'))
+            if company and device and device_company == company:
+                return render(request, 'location_paginator.html', {
+                    "imei_id": imei_id,
+                    "start_time": start_time,
+                    "end_time": now_time
+                })
+            else:
+                return HttpResponseRedirect(reverse('select_device'))
+        else:
+            return render(request, 'location_paginator.html', {
+                "imei_id": imei_id,
+                "start_time": start_time,
+                "end_time": now_time
+            })
+
+    def post(self, request, imei_id):
+        start_time = request.POST.get('start_time', '')
+        end_time = request.POST.get('end_time', '')
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        draw = request.POST.get('draw', "1")
+        start = request.POST.get('start', "0")
+        length = request.POST.get('length', "10")
+        page = request.POST.get('page', "1")
+        print(draw, start, length, page)
+
+        location_infos = LocationInfo.objects.filter(imei__id=imei_id, time__gte=start_time2,
+                                                     time__lte=end_time2).order_by('-time')
+        page2 = request.POST.get('page', '1')
+        # print(len(all_wt_data))
+        paginator = Paginator(location_infos, length)
+        try:
+            location_page = paginator.page(page2)
+        except PageNotAnInteger:
+            location_page = paginator.page(1)
+        except EmptyPage:
+            location_page = paginator.page(paginator.num_pages)
+        print(location_page)
+        data = []
+        for i in location_page:
+
+            data_time = i.time
+            if data_time:
+                data_time = datetime.strftime(data_time + timedelta(hours=8), '%Y-%m-%d %H:%M:%S')
+
+            data_spped = i.speed
+            if data_spped:
+                data_spped = float('%0.2f' % (float(data_spped) * 0.5144444))
+
+            data_longitude = i.longitude
+            data_latitude = i.latitude
+            if data_longitude and data_latitude:
+                data_longitude, data_latitude = gps_conversion(data_longitude, data_latitude)
+
+            data_power = i.power
+            if data_power and len(data_power) > 4:
+                data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
+
+            data.append({
+                "imei": i.imei.imei,
+                "data_time": data_time,
+                "lon_lat": str(data_longitude) + ',' + str(data_latitude),
+                "altitude": i.altitude,
+                "speed": data_spped,
+                "direction": i.direction,
+                "accuracy": i.accuracy,
+                "power": data_power,
+                "satellites": i.satellites,
+            })
+        return JsonResponse({
+            "draw": draw,
+            "recordsTotal": location_infos.count(),
+            "recordsFiltered": location_infos.count(),
+            "data": data
+        })
+
+
 class RecordLocationInfoView(LoginRequiredMixin, View):
     def get(self, request, record_id):
 
@@ -322,13 +415,116 @@ class RecordLocationInfoView(LoginRequiredMixin, View):
         })
 
 
+class RecordLocationPaginatorView(LoginRequiredMixin, View):
+    def get(self, request, record_id):
+        permission = request.user.permission
+        print(permission)
+        if permission == "superadmin":
+            test_record = TestRecord.objects.get(id=record_id)
+        else:
+            company_id = request.user.company_id
+            try:
+                test_record = TestRecord.objects.get(id=record_id, company_id=company_id)
+            except TestRecord.DoesNotExist as e:
+                return HttpResponseRedirect(reverse('select2_device'))
+        start_time = test_record.start_time
+        end_time = test_record.end_time
+        device_list_str = test_record.devices_id
+        devices_list = device_list_str.split(',')
+
+        devs = DevicesInfo.objects.filter(id__in=devices_list)
+        devlist = DevicesInfoSerializer(devs, many=True)
+        # print(a)
+        return render(request, 'record_location_paginator.html', {
+            "start_time": start_time,
+            "end_time": end_time,
+            "desc_list": devlist.data,
+            "record_id": record_id
+        })
+
+    def post(self, request, record_id):
+
+        permission = request.user.permission
+        print(permission)
+        test_record = TestRecord.objects.get(id=record_id)
+
+        delta = timedelta(hours=8)
+        start_time = test_record.start_time
+        end_time = test_record.end_time
+        device_list_str = test_record.devices_id
+        devices_list = device_list_str.split(',')
+
+        draw = request.POST.get('draw', "1")
+        start = request.POST.get('start', "0")
+        length = request.POST.get('length', "10")
+        page = request.POST.get('page', "1")
+        print(draw, start, length, page)
+
+        sql = "select time,  GROUP_CONCAT(imei_id) as imeis, GROUP_CONCAT(speed) as speeds from  \
+            data_info_locationinfo where imei_id in(" + device_list_str + ") \
+            and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
+            and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
+            group by time order by time;"
+        # print(sql)
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            # print(data)
+
+        page2 = request.POST.get('page', '1')
+        # print(len(all_wt_data))
+        paginator = Paginator(data, length)
+        try:
+            data_page = paginator.page(page2)
+        except PageNotAnInteger:
+            data_page = paginator.page(1)
+        except EmptyPage:
+            data_page = paginator.page(paginator.num_pages)
+
+        sendlist = list()
+
+        for rec in data_page:
+            dc = len(devices_list)
+            sendrec = [""] * (dc + 1)
+            rectime = rec[0] + delta
+            recimeis = rec[1].split(',')
+            recspeeds = rec[2].split(',')
+            sendrec[0] = rectime.strftime("%Y-%m-%d %H:%M:%S")
+            cc = 0
+            for dd in devices_list:
+                ii = 0
+                for im in recimeis:
+                    if dd == im:
+                        sendrec[cc + 1] = str(float('%0.2f' % (float(recspeeds[ii]) * 0.5144444)))
+                    ii = ii + 1
+                cc = cc + 1
+            # print(sendrec)
+            sendlist.append(sendrec)
+
+        return JsonResponse({
+            "draw": draw,
+            "recordsTotal": len(data),
+            "recordsFiltered": len(data),
+            "data": sendlist
+        })
+
+
 class RecordTrackView(LoginRequiredMixin, View):
     def get(self, request, record_id):
 
         permission = request.user.permission
         print(permission)
         print(record_id)
-        test_record = TestRecord.objects.get(id=record_id)
+
+        if permission == "superadmin":
+            test_record = TestRecord.objects.get(id=record_id)
+        else:
+            company_id = request.user.company_id
+            try:
+                test_record = TestRecord.objects.get(id=record_id, company_id=company_id)
+            except TestRecord.DoesNotExist as e:
+                return HttpResponseRedirect(reverse('select2_device'))
+        # test_record = TestRecord.objects.get(id=record_id)
 
         delta = timedelta(hours=8)
         start_time = test_record.start_time
@@ -407,7 +603,15 @@ class RecordStatisticalView(LoginRequiredMixin, View):
         permission = request.user.permission
         print(permission)
         print(record_id)
-        test_record = TestRecord.objects.get(id=record_id)
+        if permission == "superadmin":
+            test_record = TestRecord.objects.get(id=record_id)
+        else:
+            company_id = request.user.company_id
+            try:
+                test_record = TestRecord.objects.get(id=record_id, company_id=company_id)
+            except TestRecord.DoesNotExist as e:
+                return HttpResponseRedirect(reverse('select2_device'))
+        # test_record = TestRecord.objects.get(id=record_id)
 
         delta = timedelta(hours=8)
         start_time = test_record.start_time
@@ -595,9 +799,9 @@ class ExportLocationInfoView(View):
                         "media_url": "/" + filename,
                         "file": file
                     })
-                return JsonResponse({
-                    "status": 'fail'
-                })
+            return JsonResponse({
+                "status": 'fail'
+            })
         except Exception as e:
             print(e)
             return JsonResponse({
@@ -870,8 +1074,25 @@ class LocationTrackView(LoginRequiredMixin, View):
         # start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
         end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
-        location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2, time__lte=end_time2).order_by(
-            'time')
+
+        permission = request.user.permission
+        print(permission)
+        if permission == "superadmin":
+            location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                   time__lte=end_time2).order_by('time')
+        else:
+            try:
+                device = DevicesInfo.objects.filter(id=imei_id)
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+            except TestRecord.DoesNotExist as e:
+                return HttpResponseRedirect(reverse('select_device'))
+            if company and device and device_company == company:
+                location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                       time__lte=end_time2).order_by('time')
+            else:
+                return HttpResponseRedirect(reverse('select_device'))
+
         lng = list()
         lat = list()
         for i in location:

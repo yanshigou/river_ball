@@ -43,6 +43,6 @@ class TestRecord(models.Model):
     end_time = models.DateTimeField(verbose_name='结束时间', null=True, blank=True)
     devices_id = models.CharField(max_length=200, verbose_name="测量组ID")
     remarks = models.CharField(max_length=200, verbose_name="备注")
-    wind = models.CharField(max_length=50, verbose_name="风向", null=True, blank=True)
+    wind = models.CharField(max_length=50, verbose_name="风速", null=True, blank=True)
     warning_speed = models.CharField(max_length=20, verbose_name="预警速度", null=True, blank=True)
     company = models.ForeignKey(CompanyModel, verbose_name='所属公司')
