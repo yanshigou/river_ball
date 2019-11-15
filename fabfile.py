@@ -19,7 +19,8 @@ def pack():
     local('xcopy /e /s .\* ..\pack_tmp')
     with lcd('..\pack_tmp'):
         local('tar -czvf ../river_ball/%s --exclude *.pyc --exclude fabfile.py '
-              '--exclude 00* --exclude *.tar.gz --exclude README.md --exclude all_devices_info.txt  ./*' % pack_name)
+              '--exclude 00* --exclude *.tar.gz --exclude README.md --exclude all_devices_info.txt '
+              '--exclude /static/* --exclude .idea/ --exclude .git/ --exclude *.rar  ./*' % pack_name)
     local('rd /s /q ..\pack_tmp')
 
 
