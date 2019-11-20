@@ -19,11 +19,191 @@
             width: 9rem;
         }
 
+        .input-card .btn-sm {
+            margin-right: 1.2rem;
+            width: 3.5rem;
+        }
         .input-card .btn:last-child{
             margin-right: 0;
         }
     </style>
 </head>
+<body>
+    <div id="container"></div>
+    <div class="input-card">
+        <h4>轨迹回放控制</h4>
+        <div class="input-item">
+            <input type="button" class="btn" value="开始动画" id="start" />
+            <input type="button" class="btn" value="暂停动画" id="pause" />
+        </div>
+        <div class="input-item">
+            <input type="button" class="btn" value="继续动画" id="resume"  />
+            <input type="button" class="btn" value="停止动画" id="stop" />
+        </div>
+        <div>
+            <input type="button" class="btn btn-sm" value="X1倍" id="speed1" />
+            <input type="button" class="btn btn-sm" value="X2倍" id="speed2"/>
+            <input type="button" class="btn btn-sm" value="X5倍" id="speed5"/>
+            <input type="button" class="btn btn-sm" value="X10倍" id="speed10"/>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=5cda232d2d1f782a634096167304eb59">
+    </script>
+    <script src="//webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
+    <script type="text/javascript">
+
+        //创建地图
+        var map = new AMap.Map('container', {
+            zoom: 4
+        });
+
+        
+        
+        AMapUI.load(['ui/misc/PathSimplifier', 'lib/$'], function (PathSimplifier, $)  {
+
+            if (!PathSimplifier.supportCanvas) {
+                alert('当前环境不支持 Canvas！');
+                return;
+            }
+
+            var obj = {{json_data | safe}};
+
+            //just some colors
+            var colors = [
+                "#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00",
+                "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707",
+                "#651067", "#329262", "#5574a6", "#3b3eac"
+            ];
+
+            var pathSimplifierIns = new PathSimplifier({
+                zIndex: 100,
+                //autoSetFitView:false,
+                map: map, //所属的地图实例
+
+                getPath: function (pathData, pathIndex) {
+
+                    return pathData.path;
+                },
+                getHoverTitle: function (pathData, pathIndex, pointIndex) {
+
+                    if (pointIndex >= 0) {
+                        //point 
+                        var sp = obj[0].speed[pointIndex][1]
+                  
+                        return pathData.name + '，时间：' + obj[0].speed[pointIndex][0] + '速度' + obj[0].speed[pointIndex][1];
+                    }
+                    console.log(pointIndex);
+                    return "";//pathData.name + '，点数量' + pathData.path.length;
+                },
+                renderOptions: {
+                    pathLineStyle: {
+                        dirArrowStyle: true
+                    },
+                    getPathStyle: function (pathItem, zoom) {
+
+                        var color = colors[pathItem.pathIndex % colors.length],
+                            lineWidth = Math.round(2 * Math.pow(1.1, zoom - 3));
+
+                        return {
+                            pathLineStyle: {
+                                strokeStyle: color,
+                                lineWidth: lineWidth
+                            },
+                            pathLineSelectedStyle: {
+                                lineWidth: lineWidth + 2
+                            },
+                            pathNavigatorStyle: {
+                                fillStyle: color
+                            }
+                        };
+                    }
+                }
+            });
+
+            window.pathSimplifierIns = pathSimplifierIns;
+
+            $('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+
+            //$.getJSON('/media/path/'+{{json_name}}+'.json', function(d) {
+
+            $('#loadingTip').remove();
+
+            if(obj.length < 1){
+                alert("没有当前轨迹");
+                return;
+            }
+        
+            pathSimplifierIns.setData(obj);
+
+            function onload() {
+                pathSimplifierIns.renderLater();
+            }
+
+            function onerror(e) {
+                alert('图片加载失败！');
+            }
+
+            var btnStart = document.getElementById("start");
+            btnStart.onclick = startAnimation;
+            var btnPause = document.getElementById("pause");
+            btnPause.onclick = pauseAnimation;
+            var btnResume = document.getElementById("resume");
+            btnResume.onclick = resumeAnimation;
+            var btnStop = document.getElementById("stop");
+            btnStop.onclick = stopAnimation;
+
+            var btnSpeed1 = document.getElementById("speed1");
+            btnSpeed1.onclick = adjSpeed1;
+            var btnSpeed2 = document.getElementById("speed2");
+            btnSpeed2.onclick = adjSpeed2;
+            var btnSpeed5 = document.getElementById("speed5");
+            btnSpeed5.onclick = adjSpeed5;
+            var btnSpeed10 = document.getElementById("speed10");
+            btnSpeed10.onclick = adjSpeed10;
+            
+            var navgi = pathSimplifierIns.createPathNavigator(0, {
+                loop: false, //循环播放
+                speed: 500
+            }); 
+
+            //navg1.start();
+            function startAnimation() {
+                navgi.start();
+            }
+
+            function pauseAnimation() {
+                navgi.pause();
+            }
+
+            function resumeAnimation() {
+                navgi.resume();
+            }
+
+            function stopAnimation() {
+                navgi.stop();
+            }
+
+            function adjSpeed1(){
+                navgi.setSpeed(500);
+            }
+
+            function adjSpeed2(){
+                navgi.setSpeed(1000);
+            }
+
+            function adjSpeed5(){
+                navgi.setSpeed(2500);
+            }
+
+            function adjSpeed10(){
+                navgi.setSpeed(5000);
+            }
+        });
+
+        
+    </script>
+</body>
+<!--
 <body>
 <div id="container"></div>
 <div class="input-card">
@@ -36,21 +216,24 @@
         <input type="button" class="btn" value="继续动画" id="resume" onclick="resumeAnimation()"/>
         <input type="button" class="btn" value="停止动画" id="stop" onclick="stopAnimation()"/>
     </div>
+    <div>
+        <input type="button" class="btn btn-sm" value="X1倍" id="speed1" />
+        <input type="button" class="btn btn-sm" value="X2倍" id="speed2"/>
+        <input type="button" class="btn btn-sm" value="X5倍" id="speed5"/>
+        <input type="button" class="btn btn-sm" value="X10倍" id="speed10"/>
+    </div>
 </div>
 <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=5cda232d2d1f782a634096167304eb59"></script>
 <script>
-    var lng = {{ lng|safe }};
-    var lat = {{ lat|safe }};
-    var l = lng.length;
+    var location_list = {{location_list | safe}}
+    var l = location_list.length;
     // 点和路径
     var lineArr = Array(l);
-    var marker= Array(l);
     {#var marker, lineArr = [#}
     {#    [106.509920533,29.5143553667],[106.50988645,29.5141092167]#}
     {#];#}
     for (var i = 0; i < l; i++) {
-        lineArr[i] = [lng[i],lat[i]];
-        marker[i] = [lng[i],lat[i]];
+        lineArr[i] = [location_list[i].longitude,location_list[i].latitude];
     }
 
     var map = new AMap.Map("container", {
@@ -61,8 +244,8 @@
 
     var url = window.location.host;
     console.log("http://" + url +"/media/image/ship.png");
-
-    marker = new AMap.Marker({
+    console.log({{s_e_point|safe}});
+    var marker = new AMap.Marker({
         map: map,
         position: {{s_e_point|safe}},
         {#icon: "https://webapi.amap.com/images/car.png",#}
@@ -72,18 +255,14 @@
         angle:-90
     });
 
-    // 绘制轨迹
-    var polyline = new AMap.Polyline({
-        map: map,
-        path: lineArr,
-        showDir:true,
-        strokeColor: "#28F",  //线颜色
-        // strokeOpacity: 1,     //线透明度
-        strokeWeight: 6,      //线宽
-        // strokeStyle: "solid"  //线样式
+    var carWindow = new AMap.InfoWindow({
+        offset: new AMap.Pixel(6, -25),
+        content: ""
     });
 
-    var passedPolyline = new AMap.Polyline({
+    var pathPolyline = initializePaths(location_list);
+	
+	var passedPolyline = new AMap.Polyline({
         map: map,
         // path: lineArr,
         strokeColor: "#AF5",  //线颜色
@@ -92,15 +271,51 @@
         // strokeStyle: "solid"  //线样式
     });
 
-
-    marker.on('moving', function (e) {
-        passedPolyline.setPath(e.passedPath);
+        
+    AMap.event.addListener(marker, 'moving', function (e) {
+        var lastLocation = e.passedPath[e.passedPath.length - 1];
+        carWindow.setPosition(lastLocation);
+        setVehicleSpeedInWidowns(lastLocation);
+		passedPolyline.setPath(e.passedPath);
     });
 
-    map.setFitView();
+    carWindow.open(map, marker.getPosition());
 
+    map.setFitView();   
+
+    function initializePaths(paths) {
+        var line;
+        var pathLngLatArray = new Array();
+        if (paths) {
+            for (var i = 0; i < paths.length; i++) {
+                pathLngLatArray.push(new AMap.LngLat(paths[i].longitude, paths[i].latitude));
+            }
+            line = new AMap.Polyline({
+                map: map,
+                path: pathLngLatArray,
+                strokeColor: "#28F",
+                strokeOpacity: 0.8,
+                strokeWeight: 6,
+                //strokeStyle: 'solid'
+            });
+            line.setMap(map);
+        }
+        return line;
+    }
+
+    function setVehicleSpeedInWidowns(lnglat) {
+        for (var i = 0; i < location_list.length; i++) {
+            if (lnglat.distance(new AMap.LngLat(location_list[i].longitude, location_list[i].latitude)) < 4) {
+                carWindow.setContent("速度:" + location_list[i].speed + "m/s");
+                return;
+            }
+        }
+    }
+    
     function startAnimation () {
-        marker.moveAlong(lineArr, 200);
+            marker.moveAlong(pathPolyline.getPath(), 50, function (k) {
+            return k
+        }, false);
     }
 
     function pauseAnimation () {
@@ -116,4 +331,5 @@
     }
 </script>
 </body>
+-->
 </html>

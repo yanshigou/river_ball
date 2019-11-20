@@ -133,6 +133,11 @@
 
             var obj = {{json_data | safe}};
             console.log(obj);
+            if(obj.length < 1){
+                alert("没有当前轨迹");
+                return;
+            }
+
             pathSimplifierIns.setData(obj);
 
             function onload() {
