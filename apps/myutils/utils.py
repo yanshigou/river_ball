@@ -9,6 +9,7 @@ import json
 import xlsxwriter
 from devices.models import DevicesInfo
 from django.template.context_processors import csrf
+import base64
 
 
 # 操作记录
@@ -204,7 +205,6 @@ def gps_conversion(longitude, latitude):
 
 
 def check_one_net_data(value):
-
     msg = pynmea2.parse(value)
     return msg
 
@@ -260,3 +260,55 @@ def get_csrf(request):
     x = csrf(request)
     csrf_token = x['csrf_token']
     return csrf_token
+
+
+IS_DEBUG_JPUSH = True
+jpushurl = "https://api.jpush.cn/v3/push"
+jpush_appkey = "e1b7e3c9f81b8b8ba1878f5a"
+jpush_master_secret = "89964f45f3007a8b696df6b5"
+
+
+def jpush_function_extra(username, kind, summary, content):
+    """
+    :param username: 别名
+    :param kind: 定义类型（1-预警速度, 2-重置密码）
+    :param summary: 通知标题
+    :param content: 通知内容
+    :return:
+    """
+    base64_auth_string = base64.b64encode((jpush_appkey + ":" + jpush_master_secret).encode("utf-8"))
+    # print(base64_auth_string)
+    # print(str(base64_auth_string, 'utf-8'))
+    headers = {'content-type': 'application/json', "Authorization": "Basic " + str(base64_auth_string, 'utf-8')}
+    msg = {
+        "platform": "all",
+        "audience":
+            {"alias": [username]}
+        ,
+        "notification": {
+            "ios": {
+                "alert": summary,
+                "sound": "default",
+                # "badge": "+1",
+                "content-available": True,
+                "extras": {
+                    "kind": kind,
+                    "content": content
+                }
+            },
+            "android": {
+                "alert": summary,
+                # "title": "智守护",
+                "builder_id": 1,
+                "extras": {
+                    "kind": kind,
+                    "content": content
+                }
+            }
+        },
+        "options": {
+            "apns_production": IS_DEBUG_JPUSH,
+            "apns_collapse_id": "cmx"
+        }
+    }
+    return requests.post(jpushurl, data=json.dumps(msg), headers=headers)
