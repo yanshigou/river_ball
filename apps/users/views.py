@@ -9,7 +9,7 @@ from .forms import RegisterForm, LoginForm, UploadImageForm, UserInfoForm, Passw
     UserProfileSerializer, MessageSerializer
 from .models import UserProfile, HistoryRecord, Message, CompanyModel
 from myutils.mixin_utils import LoginRequiredMixin
-from myutils.utils import create_history_record, make_message
+from myutils.utils import create_history_record, make_message, jpush_function_extra
 from django.core.urlresolvers import reverse
 from devices.models import DevicesInfo
 DEFAULT_PASSWORD = "123456"
@@ -272,6 +272,8 @@ class ResetPasswordView(View):
         userinfo.password = make_password("123456")
         userinfo.save()
         make_message(userinfo.username, "已重置密码，请立即修改密码！", -1)
+        res = jpush_function_extra(userinfo.username, "2", "已重置密码，请立即修改密码！", "已重置密码，密码过于简单，建议立即修改密码！")
+        print(res.json())
         return JsonResponse({
             "status": "success",
             "msg": "重置密码成功"
