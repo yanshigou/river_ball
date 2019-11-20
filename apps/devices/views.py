@@ -170,9 +170,9 @@ class ShowMapView(View):
     def get(self, request):
         file = MEDIA_ROOT + '/all_devices_info.txt'
         permission = request.user.permission
-        print(permission)
+        # print(permission)
         if permission == 'superadmin':
-            all_devices = DevicesInfo.objects.all()
+            all_devices = DevicesInfo.objects.filter(is_active=True)
         else:
             try:
                 company = request.user.company.company_name
@@ -180,7 +180,7 @@ class ShowMapView(View):
                 print(e)
                 return HttpResponseRedirect(reverse('devices_info'))
             if company:
-                all_devices = DevicesInfo.objects.filter(company__company_name=company)
+                all_devices = DevicesInfo.objects.filter(company__company_name=company, is_active=True)
             else:
                 all_devices = []
         # all_devices = DevicesInfo.objects.all()
@@ -219,9 +219,9 @@ class ShowMapView(View):
     def post(self, request):
         # file = MEDIA_ROOT + '/all_devices_info.txt'
         permission = request.user.permission
-        print(permission)
+        # print(permission)
         if permission == 'superadmin':
-            all_devices = DevicesInfo.objects.all()
+            all_devices = DevicesInfo.objects.filter(is_active=True)
         else:
             try:
                 company = request.user.company.company_name
@@ -229,7 +229,7 @@ class ShowMapView(View):
                 print(e)
                 return HttpResponseRedirect(reverse('devices_info'))
             if company:
-                all_devices = DevicesInfo.objects.filter(company__company_name=company)
+                all_devices = DevicesInfo.objects.filter(company__company_name=company, is_active=True)
             else:
                 all_devices = []
         # all_devices = DevicesInfo.objects.all()
