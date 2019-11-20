@@ -544,7 +544,6 @@ class RecordTrackView(LoginRequiredMixin, View):
             data = cursor.fetchall()
             # print(data)
         sendlist = list()
-
         for rec in data:
             # dc = len(devices_list)
             sendrec = [""] * (len(devices_list) * 3 + 1)
@@ -580,15 +579,19 @@ class RecordTrackView(LoginRequiredMixin, View):
         json_list = list()
         devcount = 0
         for dev in devlist.data:
-            dict_path = dict()
-            dict_path["name"] = dev["imei"]
-            json_list.append(dict_path)
             path_list = list()
+            speed_list = list()
+            # print(sendlist)
             for ix in enumerate(sendlist):
                 if sendlist[ix[0]][1 + devcount * 3] != "" and sendlist[ix[0]][1 + devcount * 3] != "0":
                     path_list.append([sendlist[ix[0]][1 + devcount * 3], sendlist[ix[0]][2 + devcount * 3]])
-            dict_path["path"] = path_list
+            if len(path_list) > 0:
+                dict_path = dict()
+                dict_path["name"] = dev["imei"]
+                json_list.append(dict_path)
+                dict_path["path"] = path_list
             devcount = devcount + 1
+        # print(json_list)
         return render(request, 'recordtrack.html', {
             "json_data": json.dumps(json_list),
             "start_time": start_time,
@@ -1092,21 +1095,27 @@ class LocationTrackView(LoginRequiredMixin, View):
                                                        time__lte=end_time2).order_by('time')
             else:
                 return HttpResponseRedirect(reverse('select_device'))
-
-        lng = list()
-        lat = list()
-        for i in location:
-            if i.longitude and i.latitude:
-                longitude, latitude = gps_conversion(i.longitude, i.latitude)
-                lng.append(longitude)
-                lat.append(latitude)
+        json_list = list()
+        location_list = list()
+        speed_list = list()
+        dict_path = dict()
+        if len(location) > 0:
+            dict_path["name"] = location[0].imei.desc
+            for i in location:
+                if i.longitude and i.latitude:
+                    longitude, latitude = gps_conversion(i.longitude, i.latitude)
+                    location_list.append([longitude, latitude])
+                    speed_list.append([(i.time+timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), i.speed])
+                
+            dict_path["path"] = location_list
+            dict_path["speed"] = speed_list
+            json_list.append(dict_path)
         if location:
             s_e_point = gps_conversion(location[0].longitude, location[0].latitude)
-            # print(s_e_point)
         else:
             s_e_point = [106.53233, 29.522584]
         return render(request, 'track.html', {
-            "lng": lng, "lat": lat, "s_e_point": s_e_point
+            "json_data":json_list, "s_e_point": s_e_point
         })
 
 
@@ -1266,11 +1275,84 @@ class TestRecordDoneView(View):
                         "error_no": 0,
                         "all_test_record": record_list
                     })
+        except TestRecord.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个记录"
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户"
+            })
         except Exception as e:
             print(e)
             return JsonResponse({
                 "error_no": -1,
                 "info": str(e)
+            })
+
+
+class TestRecordDoneDelView(View):
+    def post(self, request):
+        try:
+            username = request.META.get('HTTP_USERNAME')
+            user = UserProfile.objects.get(username=username)
+            try:
+                record_id = request.data.get('record_id')
+            except Exception as e:
+                record_id = request.POST.get('record_id')
+            permission = user.permission
+            if permission == 'superadmin':
+                test_record = TestRecord.objects.get(id=record_id)
+                print(test_record)
+                test_record.delete()
+                create_history_record(username, '删除已完成的测量记录 %s' % test_record.remarks)
+                return JsonResponse({
+                    "error_no": 0,
+                    "status": "success"
+                })
+            else:
+                try:
+                    company = user.company.company_name
+                    # print(company)
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        "error_no": -1,
+                        "info": str(e)
+                    })
+                if company:
+                    test_record = TestRecord.objects.get(id=record_id, company__company_name=company)
+                    test_record.delete()
+                    create_history_record(username, '删除已完成的测量记录 %s' % test_record.remarks)
+                    return JsonResponse({
+                        "error_no": 0,
+                        "status": "success"
+                    })
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户",
+                "msg": "没有这个用户"
+            })
+        except TestRecord.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个记录",
+                "msg": "没有这个记录"
+            })
+        except UserProfile.DoesNotExist:
+            return JsonResponse({
+                "error_no": -2,
+                "info": "没有这个用户",
+                "msg": "没有这个用户"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e),
+                "msg": str(e)
             })
 
 
