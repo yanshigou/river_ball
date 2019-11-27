@@ -64,11 +64,13 @@
             </a>
         </p>
         <!-- DataTales Example -->
-        <p style="font-size: 20px">
+        <p >
             <a id="first_time"></a><a id="zhi"></a><a id="last_time"></a> <br id="br" style="display: none">
             总里程约：<a id="total_nums"></a> 米， <a id="total_nums2"></a> 千米 <br>
-            平均速度约： <a id="average_speed"></a> 米/秒 &nbsp; 最大速度在：<a id="max_speed_time"></a>&nbsp; 速度为：<a id="max_speed"></a>
-            <a style="display: none" id="max_speed_map" target="view_window">地图查看</a>
+            平均速度约： <a id="average_speed"></a> 米/秒 <br>
+        </p>
+        <p style="display: none" id="max_list">
+
         </p>
         <p id="msg"></p>
         <div class="card shadow mb-4">
@@ -177,32 +179,43 @@
                 async: true,
                 success: function (data) {
                     if (data.status === 'success') {
+                        var max_list = data.max_list;
+                        var p_max_list = $("#max_list");
+                        p_max_list.html("");
+                        $.each(max_list, function (i, value) {
+                            {#console.log(i, value);                      // i 为索引，x为 value#}
+                            var url = "#";
+                            if (value.max_speed_lon && value.max_speed_lat) {
+                                url = window.location.protocol + "//" + window.location.host;
+                                {#var max_speed_map = $('#max_speed_map');#}
+                                {#max_speed_map.show();#}
+                                {#console.log(value.max_speed_lon, value.max_speed_lat);#}
+                                url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat;
+                                {#console.log(url);#}
+                            }
+                            p_max_list.append('最大速度在：' + value.max_speed_time + '&nbsp; 速度为：' + value.max_speed + ' 米/秒 &nbsp;');
+                            p_max_list.append('<a href="' +
+                                url + '" target="view_window">' + "<i class=\"fa fa-map-marker\"></i>" + '</a>' + '<br>');
+                            p_max_list.show();
+                        });
                         $('#total_nums').html(data.total_nums);
                         $('#total_nums2').html(data.total_nums2);
                         $('#average_speed').html(data.average_speed);
                         $('#first_time').html(data.first_time);
                         $('#last_time').html(data.last_time);
-                        $('#max_speed_time').html(data.max_speed_time);
-                        $('#max_speed').html(data.max_speed);
                         if (data.first_time) {
                             $('#zhi').html('&nbsp;至&nbsp;');
                             $('#br').show();
-                        }
-                        if (data.max_speed_lon && data.max_speed_lat){
-                            var url = window.location.protocol + "//" + window.location.host;
-                            var max_speed_map = $('#max_speed_map');
-                            max_speed_map.show();
-                            console.log(data.max_speed_lon, data.max_speed_lat);
-                            url += "/dataInfo/pointMapShow/?lon=" + data.max_speed_lon + "&lat=" + data.max_speed_lat;
-                            console.log(url);
-                            max_speed_map.attr('href', url);
+                        } else {
+                            $('#zhi').html('');
+                            $('#br').hide();
                         }
 
                     } else {
                         $('#total_nums').html(data.total_nums);
                         $('#total_nums2').html(data.total_nums2);
                         $('#average_speed').html(data.average_speed);
-                        $('#msg').html(data.msg);
+                        $('#msg').html("后台出错" + data.msg);
                     }
 
                 }
@@ -292,7 +305,7 @@
             url += $('#imei_id').val() + '/';
             url += $('#date_time0').val() + '/';
             url += $('#date_time1').val();
-            console.log(url);
+            {#console.log(url);#}
             window.open(url);
         })
     </script>
