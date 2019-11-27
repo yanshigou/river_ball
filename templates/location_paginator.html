@@ -39,6 +39,9 @@
                 <input type="text" class="" id="date_time0" name="start_time" value="{{ start_time }}">
                 &nbsp;至 &nbsp;
                 <input type="text" class="" id="date_time1" name="end_time" value="{{ end_time }}">
+                &nbsp;
+                首尾速度限值：
+                <input type="text" class="" id="invalid_speed" value="0.5">
             </p>
             <input type="hidden" value="{{ imei_id }}" name="imei_id" id="imei_id">
 
@@ -52,17 +55,24 @@
             <a href="" style="text-decoration:none">
                 <button type="button" class="btn btn-primary btn-sm">重置</button>
             </a>
-{#            <a href="{% url 'track' imei_id start_time end_time %}" target="view_window"#}
-{#               style="text-decoration:none">#}
-                <button type="button" class="btn btn-success btn-sm" id="track_btn">轨迹回放</button>
-{#            </a>#}
+            {#            <a href="{% url 'track' imei_id start_time end_time %}" target="view_window"#}
+            {#               style="text-decoration:none">#}
+            <button type="button" class="btn btn-success btn-sm" id="track_btn">轨迹回放</button>
+            {#            </a>#}
             <a>
                 <button type="button" id="exportExcel" class="btn btn-info btn-sm">导出Excel表</button>
             </a>
         </p>
         <!-- DataTales Example -->
+        <p style="font-size: 20px">
+            <a id="first_time"></a><a id="zhi"></a><a id="last_time"></a> <br id="br" style="display: none">
+            总里程约：<a id="total_nums"></a> 米， <a id="total_nums2"></a> 千米 <br>
+            平均速度约： <a id="average_speed"></a> 米/秒 &nbsp; 最大速度在：<a id="max_speed_time"></a>&nbsp; 速度为：<a id="max_speed"></a>
+            <a style="display: none" id="max_speed_map" target="view_window">地图查看</a>
+        </p>
+        <p id="msg"></p>
         <div class="card shadow mb-4">
-            {#            <div class="alert"></div>#}
+            <div class="alert" style="display: none;"></div>
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary"></h6>
             </div>
@@ -149,10 +159,58 @@
     </script>
     <script>
         $(function () {
-            reloadDatatables()
+            reloadDatatables();
+            {#total_nums();#}
         });
+        var total_nums = function () {
+            $.ajax({
+                cache: false,
+                type: "POST",
+                dataType: 'json',
+                url: "{% url 'location_distance' %}",
+                data: {
+                    "start_time": $('#date_time0').val(),
+                    "end_time": $('#date_time1').val(),
+                    "invalid_speed": $('#invalid_speed').val(),
+                    "imei_id": {{ imei_id }}
+                },
+                async: true,
+                success: function (data) {
+                    if (data.status === 'success') {
+                        $('#total_nums').html(data.total_nums);
+                        $('#total_nums2').html(data.total_nums2);
+                        $('#average_speed').html(data.average_speed);
+                        $('#first_time').html(data.first_time);
+                        $('#last_time').html(data.last_time);
+                        $('#max_speed_time').html(data.max_speed_time);
+                        $('#max_speed').html(data.max_speed);
+                        if (data.first_time) {
+                            $('#zhi').html('&nbsp;至&nbsp;');
+                            $('#br').show();
+                        }
+                        if (data.max_speed_lon && data.max_speed_lat){
+                            var url = window.location.protocol + "//" + window.location.host;
+                            var max_speed_map = $('#max_speed_map');
+                            max_speed_map.show();
+                            console.log(data.max_speed_lon, data.max_speed_lat);
+                            url += "/dataInfo/pointMapShow/?lon=" + data.max_speed_lon + "&lat=" + data.max_speed_lat;
+                            console.log(url);
+                            max_speed_map.attr('href', url);
+                        }
+
+                    } else {
+                        $('#total_nums').html(data.total_nums);
+                        $('#total_nums2').html(data.total_nums2);
+                        $('#average_speed').html(data.average_speed);
+                        $('#msg').html(data.msg);
+                    }
+
+                }
+            });
+        };
         var reloadDatatables = function () {
             {#console.log('触发了');#}
+            total_nums();
             var tables = $('#dataTable').DataTable({
                 select: 'single',
                 destroy: true,
@@ -227,7 +285,7 @@
                     {data: "satellites"},
                 ]
             });
-        }
+        };
         $('#track_btn').on('click', function () {
             var url = '/dataInfo/track/';
             console.log('{% url 'track' imei_id start_time end_time%}');
