@@ -4,6 +4,7 @@ __date__ = "2019/9/5"
 import requests
 import json
 import base64
+from datetime import timedelta
 
 
 def test():
@@ -80,7 +81,34 @@ def jpush_function_extra(username, kind, summary, content):
     return requests.post(jpushurl, data=json.dumps(msg), headers=headers)
 
 
+def gps_conversion(longitude, latitude):
+    # print(longitude.split('.'))
+    longitude1 = float(longitude.split('.')[0][:3])
+    longitude2 = float((float(longitude[3:]) / 60))
+    longitude = longitude1 + longitude2
+    # print(longitude1)
+    # print(longitude2)
+    # print(longitude)
+
+    latitude1 = float(latitude.split('.')[0][:2])
+    latitude2 = float((float(latitude[2:]) / 60))
+    latitude = latitude1 + latitude2
+    # print(latitude1)
+    # print(latitude2)
+    # print(latitude)
+    return longitude, latitude
+
+
+def time_difference(location_infos, n):
+    if n == 0:
+        return timedelta(seconds=0)
+    # if (location_infos[n].time - location_infos[n-1].time).seconds > 6:
+    #     print(location_infos[n].time, location_infos[n-1].time)
+    return location_infos[n].time - location_infos[n-1].time
+
+
 if __name__ == '__main__':
-    res = jpush_function_extra("13883562563", "1", "预警速度测试", "预警速度测试内容")
-    print(res)
-    print(res.json())
+    # res = jpush_function_extra("13883562563", "1", "预警速度测试", "预警速度测试内容")
+    # print(res)
+    # print(res.json())
+    print(gps_conversion("12016.31454", "3133.93492"))
