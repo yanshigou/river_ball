@@ -367,7 +367,7 @@ def time_difference(location_infos, n):
         return timedelta(seconds=0)
     # if (location_infos[n].time - location_infos[n-1].time).seconds > 6:
     #     print(location_infos[n].time, location_infos[n-1].time)
-    return location_infos[n].time - location_infos[n-1].time
+    return location_infos[n].time - location_infos[n - 1].time
 
 
 class LocationDistanceView(APIView):
@@ -388,14 +388,11 @@ class LocationDistanceView(APIView):
         len_location_infos = len(location_infos)
         total_nums = 0
         average_speed = 0
-        max_speed = 0
         is_continue = True
         first_time = None
         last_time = None
-        max_speed_lon = None
-        max_speed_lat = None
-        max_speed_time = ""
         speed_list = list()
+        max_list = list()
         if location_infos:
             try:
                 for i in range(len_location_infos):
@@ -420,41 +417,64 @@ class LocationDistanceView(APIView):
                 if not first_time:
                     first_time = location_infos[0].time
                 if not last_time:
-                    last_time = location_infos[len(location_infos)-1].time
-                average_speed = total_nums/(last_time - first_time).seconds
+                    last_time = location_infos[len(location_infos) - 1].time
+                average_speed = total_nums / (last_time - first_time).seconds
                 first_time = datetime.strftime(first_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                 last_time = datetime.strftime(last_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                 max_speed = max(speed_list)
-                print()
-                max_speed_index = speed_list.index(max_speed)
-                max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude, location_infos[max_speed_index].latitude)
-                max_speed_time = datetime.strftime(location_infos[max_speed_index].time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
-                print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
 
+                max_speed_index = speed_list.index(max_speed)
+                max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude,
+                                                              location_infos[max_speed_index].latitude)
+                max_speed_time = datetime.strftime(location_infos[max_speed_index].time + timedelta(hours=8),
+                                                   "%Y-%m-%d %H:%M:%S")
+                # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
+                max_list.append({
+                    "max_speed": max_speed, "max_speed_time": max_speed_time,
+                    "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                })
+                while True:
+                    speed_list[max_speed_index] = 0
+                    if max(speed_list) == max_speed:
+                        max_speed_index = speed_list.index(max_speed)
+                        max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude,
+                                                                      location_infos[max_speed_index].latitude)
+                        max_speed_time = datetime.strftime(location_infos[max_speed_index].time + timedelta(hours=8),
+                                                           "%Y-%m-%d %H:%M:%S")
+                        # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
+                        max_list.append({
+                            "max_speed": max_speed, "max_speed_time": max_speed_time,
+                            "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                        })
+                    else:
+                        break
+                # print(max_list)
             except Exception as e:
                 return JsonResponse({
                     "total_nums": '%.2f' % total_nums,
-                    "total_nums2": '%.0f' % (total_nums/1000),
+                    "total_nums2": '%.1f' % (total_nums / 1000),
                     "first_time": first_time,
                     "last_time": last_time,
                     "average_speed": '%.2f' % average_speed,
                     "status": "fail",
-                    "max_speed": max_speed,
-                    "max_speed_lon": max_speed_lon,
-                    "max_speed_lat": max_speed_lat,
-                    "max_speed_time": max_speed_time,
+                    # "max_speed": max_speed,
+                    # "max_speed_lon": max_speed_lon,
+                    # "max_speed_lat": max_speed_lat,
+                    # "max_speed_time": max_speed_time,
+                    "max_list": max_list,
                     "msg": str(e)
                 })
         return JsonResponse({
             "total_nums": '%.2f' % total_nums,
-            "total_nums2": '%.0f' % (total_nums/1000),
+            "total_nums2": '%.1f' % (total_nums / 1000),
             "average_speed": '%.2f' % average_speed,
             "first_time": first_time,
             "last_time": last_time,
-            "max_speed": max_speed,
-            "max_speed_lon": max_speed_lon,
-            "max_speed_lat": max_speed_lat,
-            "max_speed_time": max_speed_time,
+            # "max_speed": max_speed,
+            # "max_speed_lon": max_speed_lon,
+            # "max_speed_lat": max_speed_lat,
+            # "max_speed_time": max_speed_time,
+            "max_list": max_list,
             "status": "success"
         })
 
@@ -516,7 +536,7 @@ class RecordLocationInfoView(LoginRequiredMixin, View):
 class RecordLocationPaginatorView(LoginRequiredMixin, View):
     def get(self, request, record_id):
         permission = request.user.permission
-        print(permission)
+        # print(permission)
         if permission == "superadmin":
             test_record = TestRecord.objects.get(id=record_id)
         else:
@@ -542,8 +562,8 @@ class RecordLocationPaginatorView(LoginRequiredMixin, View):
 
     def post(self, request, record_id):
 
-        permission = request.user.permission
-        print(permission)
+        # permission = request.user.permission
+        # print(permission)
         test_record = TestRecord.objects.get(id=record_id)
 
         delta = timedelta(hours=8)
@@ -605,6 +625,140 @@ class RecordLocationPaginatorView(LoginRequiredMixin, View):
             "recordsFiltered": len(data),
             "data": sendlist
         })
+
+
+class RecordLocationDistanceView(APIView):
+    def post(self, request):
+        try:
+            record_id = request.data.get('record_id')
+            invalid_speed = request.data.get('invalid_speed', 0.5)
+            print(record_id)
+            if invalid_speed:
+                invalid_speed = float(invalid_speed)
+            else:
+                invalid_speed = 0
+            test_record = TestRecord.objects.get(id=record_id)
+            delta = timedelta(hours=8)
+            start_time = test_record.start_time - delta
+            end_time = test_record.end_time - delta
+            device_list_str = test_record.devices_id
+            devices_list = device_list_str.split(',')
+            data_list = list()
+            for imei_id in devices_list:
+                location_infos = LocationInfo.objects.filter(
+                    imei__id=imei_id, time__gte=start_time, time__lte=end_time).exclude(
+                    Q(speed__isnull=True) | Q(speed="")).order_by('time')
+                len_location_infos = len(location_infos)
+                total_nums = 0
+                average_speed = 0
+                is_continue = True
+                first_time = None
+                last_time = None
+                speed_list = list()
+                max_list = list()
+                if location_infos:
+                    try:
+                        for i in range(len_location_infos):
+                            speed = location_infos[i].speed
+                            speed = float('%0.2f' % (float(speed) * 0.5144444))
+                            speed_list.append(speed)
+                            # 去掉首位速度小于改值这个值需要商讨确定
+                            if speed <= invalid_speed and is_continue:
+                                first_time = location_infos[i].time
+                                continue
+                            # TODO 这里有bug，并不知道多个点没有移动定性固定值不行
+                            # elif i+2000 > len_location_infos and speed <= invalid_speed:
+                            #     continue
+                            # print(i)
+                            last_time = location_infos[i].time
+                            is_continue = False
+                            time_diff = time_difference(location_infos, i).seconds
+                            # print(speed)
+                            # print(time_diff)
+                            total_nums += speed * time_diff
+
+                        if not first_time:
+                            first_time = location_infos[0].time
+                        if not last_time:
+                            last_time = location_infos[len(location_infos) - 1].time
+                        average_speed = total_nums / (last_time - first_time).seconds
+                        first_time = datetime.strftime(first_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                        last_time = datetime.strftime(last_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                        max_speed = max(speed_list)
+
+                        max_speed_index = speed_list.index(max_speed)
+                        max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude,
+                                                                      location_infos[max_speed_index].latitude)
+                        max_speed_time = datetime.strftime(location_infos[max_speed_index].time + timedelta(hours=8),
+                                                           "%Y-%m-%d %H:%M:%S")
+                        # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
+                        max_list.append({
+                            "max_speed": max_speed, "max_speed_time": max_speed_time,
+                            "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                        })
+                        while True:
+                            speed_list[max_speed_index] = 0
+                            if max(speed_list) == max_speed:
+                                max_speed_index = speed_list.index(max_speed)
+                                max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude,
+                                                                              location_infos[max_speed_index].latitude)
+                                max_speed_time = datetime.strftime(
+                                    location_infos[max_speed_index].time + timedelta(hours=8),
+                                    "%Y-%m-%d %H:%M:%S")
+                                # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
+                                max_list.append({
+                                    "max_speed": max_speed, "max_speed_time": max_speed_time,
+                                    "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                                })
+                            else:
+                                break
+                        # print(max_list)
+                    except Exception as e:
+                        data_list.append({
+                            "status": "fail",
+                            "device_data": {
+                                "total_nums": '%.2f' % total_nums,
+                                "total_nums2": '%.1f' % (total_nums / 1000),
+                                "average_speed": '%.2f' % average_speed,
+                                "first_time": first_time,
+                                "last_time": last_time,
+                                # "max_speed": max_speed,
+                                # "max_speed_lon": max_speed_lon,
+                                # "max_speed_lat": max_speed_lat,
+                                # "max_speed_time": max_speed_time,
+                                "max_list": max_list
+                            },
+                            "desc": location_infos[0].imei.desc,
+                            "device_id": str(location_infos[0].imei.id),
+                            "msg": str(e)
+                        })
+
+                    data_list.append({
+                        "status": "success",
+                        "device_data": {
+                            "total_nums": '%.2f' % total_nums,
+                            "total_nums2": '%.1f' % (total_nums / 1000),
+                            "average_speed": '%.2f' % average_speed,
+                            "first_time": first_time,
+                            "last_time": last_time,
+                            # "max_speed": max_speed,
+                            # "max_speed_lon": max_speed_lon,
+                            # "max_speed_lat": max_speed_lat,
+                            # "max_speed_time": max_speed_time,
+                            "max_list": max_list
+                        },
+                        "device_id": str(location_infos[0].imei.id),
+                        "desc": location_infos[0].imei.desc
+                    })
+            return JsonResponse({
+                "status": "success",
+                "data_list": data_list
+            })
+        except Exception as e:
+            return JsonResponse({
+                "status": "fail",
+                "msg": str(e)
+            })
 
 
 class RecordTrackView(LoginRequiredMixin, View):
@@ -1203,7 +1357,7 @@ class LocationTrackView(LoginRequiredMixin, View):
                 if i.longitude and i.latitude:
                     longitude, latitude = gps_conversion(i.longitude, i.latitude)
                     location_list.append([longitude, latitude])
-                    speed_list.append([(i.time+timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), i.speed])
+                    speed_list.append([(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), i.speed])
 
             dict_path["path"] = location_list
             dict_path["speed"] = speed_list
@@ -1213,7 +1367,7 @@ class LocationTrackView(LoginRequiredMixin, View):
         else:
             s_e_point = [106.53233, 29.522584]
         return render(request, 'track.html', {
-            "json_data":json_list, "s_e_point": s_e_point
+            "json_data": json_list, "s_e_point": s_e_point
         })
 
 
