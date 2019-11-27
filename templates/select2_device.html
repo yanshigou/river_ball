@@ -127,6 +127,7 @@
 {#                        </tfoot>#}
                         <tbody id="t_body">
                         {% for record in all_test_record %}
+                            {% if record.end_time %}
                             <tr>
                                 <td>{{ record.remarks }}</td>
                                 <td>{{ record.devices_id }}</td>
@@ -158,6 +159,7 @@
                                     </button>
                                 </td>
                             </tr>
+                            {% endif %}
                         {% endfor %}
                         </tbody>
                     </table>
