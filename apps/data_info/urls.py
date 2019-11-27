@@ -6,7 +6,7 @@ from .views import LocationPaginatorInfoView, DeviceDataInfoView, UploadLocation
 from .views import OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
     RecordInfoView, AppStartTestRecordView, AppEndTestRecordView, TestRecordDoneView, TestRecordNotDoneView, \
     AppTestRecordSpeedListApiView, AppTestRecordLocationListApiView, RecordLocationPaginatorView, \
-    RecordTrackView, RecordStatisticalView, TestRecordDoneDelView
+    RecordTrackView, RecordStatisticalView, TestRecordDoneDelView, LocationDistanceView, PointMapView
 
 urlpatterns = [
     url(r'^deviceDataInfo/$', DeviceDataInfoView.as_view(), name='select_device'),
@@ -31,5 +31,8 @@ urlpatterns = [
     url(r'^testRecordLocationData/$', AppTestRecordLocationListApiView.as_view()),
     url(r'^locationInfo/$', AppLocationInfoView.as_view()),
     url(r'^testRecordDoneDel/$', TestRecordDoneDelView.as_view(), name='test_record_done_del'),
+
+    url(r'^locationDistance/$', LocationDistanceView.as_view(), name="location_distance"),
+    url(r'^pointMapShow/$', PointMapView.as_view(), name="point_map_show"),
 
 ]
