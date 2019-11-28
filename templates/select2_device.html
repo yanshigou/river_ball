@@ -102,7 +102,7 @@
                             <th>测量设备</th>
                             <th>开始时间</th>
                             <th>结束时间</th>
-                            <th>风速</th>
+{#                            <th>风速</th>#}
 {#                            <th>预警速度 m/s</th>#}
                             {% if request.user.permission == "superadmin" %}
                                 <th>所属公司</th>
@@ -133,10 +133,10 @@
                                 <td>{{ record.devices_id }}</td>
                                 <td>{{ record.start_time }}</td>
                                 <td>{{ record.end_time|default_if_none:"正在测量" }}</td>
-                                <td>{{ record.wind|default_if_none:"" }}</td>
+{#                                <td>{{ record.wind|default_if_none:"" }}</td>#}
 {#                                <td>{{ record.warning_speed|default_if_none:"" }}</td>#}
                                 {% if request.user.permission == "superadmin" %}
-                                    <td>{{ record.company.company_name }}</td>
+                                    <td>{{ record.company_id }}</td>
                                 {% endif %}
                                 <td>
                                     {#                                        <input type="checkbox" value="{{ record.id }}" name="checkbox"/>#}
@@ -154,6 +154,11 @@
                                         <button type="button" class="btn btn-info btn-sm" style="line-height: 1">数据统计
                                         </button>
                                     </a>
+                                    <a href="{% url 'record_modify' record.id %}" style="text-decoration:none">
+                                            <button type="button" class="btn btn-warning btn-sm" style="line-height: 1">
+                                                修改
+                                            </button>
+                                        </a>
                                     <button type="button" class="btn btn-danger btn-sm"
                                             onclick="return deviceb({{ record.id }})" style="line-height: 1">删除
                                     </button>

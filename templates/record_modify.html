@@ -1,0 +1,128 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+    测量记录修改
+{% endblock %}
+{% block topbar_title %}
+    测量记录修改
+{% endblock %}
+{% block other_css %}
+    <link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
+{% endblock %}
+
+{% block head_scripts %}
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid" style="font-size:14px">
+
+        <!-- Page Heading -->
+
+        {#    <h2>#}
+        {#        <small>修改</small>#}
+        {#    </h2>#}
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'select2_device' %}">测量记录</a></li>
+            <li class="breadcrumb-item active">修改记录</li>
+        </ol>
+        <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
+
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">测量备注 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="remarks" value="{{ record_info.remarks }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">测量设备 *</label>
+                <div class="col-md-5 col-sm-6 col-xs-12">
+                <select name="devices_id" class="form-control col-md-7 col-xs-12 address selectpicker" multiple>
+                    {% for d in devices %}
+                        {% if d.id in record_info.devices_id %}
+                            <option value="{{ d.id }}" selected>{{ d.desc }}</option>
+                        {% else %}
+                            <option value="{{ d.id }}">{{ d.desc }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">开始时间 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" id="date_time0" name="start_time" value="{{ record_info.start_time }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">结束时间 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" id="date_time1" name="end_time" value="{{ record_info.end_time }}">
+                </div>
+            </div>
+
+            <input type="hidden" value="{{ record_info.company.id }}" name="company">
+            <div class="ln_solid"></div>
+            <div class="form-group">
+                <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                    <button type="button" id="device_info_button" class="btn btn-primary">确认修改</button>
+                </div>
+            </div>
+            {% csrf_token %}
+        </form>
+    </div>
+{% endblock %}
+
+{% block other_js %}
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script>
+        $('#device_info_button').on('click', function () {
+            $.ajax({
+                cache: false,
+                type: 'post',
+                dataType: 'json',
+                url: "{% url 'record_modify' record_info.id %}",
+                data: $("#device_info_form").serialize(),
+                async: true,
+                success: function (data) {
+                    if (data.status === "success") {
+                        alert('修改信息成功');
+                        window.location.href = "{% url 'select2_device' %}"
+                    } else {
+                        if (data.msg) {
+                            alert(data.msg)
+                        } else {
+                            alert('修改信息失败')
+                        }
+                    }
+                }
+            })
+        })
+    </script>
+    <script>
+        //执行一个laydate实例
+        laydate.render({
+            elem: '#date_time0',
+            type: 'datetime'
+        });
+        laydate.render({
+            elem: '#date_time1',
+            type: 'datetime'
+        });
+    </script>
+
+{% endblock %}
