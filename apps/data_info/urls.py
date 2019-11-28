@@ -2,11 +2,13 @@
 __author__ = "dzt"
 __date__ = "2019/9/4"
 from django.conf.urls import url
-from .views import LocationPaginatorInfoView, DeviceDataInfoView, UploadLocationInfoView, StatisticalToOneView, LocationTrackView
+from .views import LocationPaginatorInfoView, DeviceDataInfoView, UploadLocationInfoView, StatisticalToOneView, \
+    LocationTrackView
 from .views import OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportLocationInfoView, \
     RecordInfoView, AppStartTestRecordView, AppEndTestRecordView, TestRecordDoneView, TestRecordNotDoneView, \
     AppTestRecordSpeedListApiView, AppTestRecordLocationListApiView, RecordLocationPaginatorView, \
-    RecordTrackView, RecordStatisticalView, TestRecordDoneDelView, LocationDistanceView, PointMapView, RecordLocationDistanceView
+    RecordTrackView, RecordStatisticalView, TestRecordDoneDelView, LocationDistanceView, PointMapView, \
+    RecordLocationDistanceView, RecordInfoModifyView
 
 urlpatterns = [
     url(r'^deviceDataInfo/$', DeviceDataInfoView.as_view(), name='select_device'),
@@ -19,7 +21,8 @@ urlpatterns = [
     url(r'^statistical/(?P<imei_id>\d+)/$', StatisticalToOneView.as_view(), name='statistical'),
     url(r'^track/(?P<imei_id>\d+)/(?P<start_time>.*)/(?P<end_time>.*)$', LocationTrackView.as_view(), name='track'),
 
-    url(r'^recordLocationInfo/(?P<record_id>\d+)/$', RecordLocationPaginatorView.as_view(), name='record_location_info'),
+    url(r'^recordLocationInfo/(?P<record_id>\d+)/$', RecordLocationPaginatorView.as_view(),
+        name='record_location_info'),
     url(r'^recordTrack/(?P<record_id>\d+)/$', RecordTrackView.as_view(), name='record_track'),
     url(r'^recordStatistical/(?P<record_id>\d+)/$', RecordStatisticalView.as_view(), name='record_statistical'),
 
@@ -35,5 +38,6 @@ urlpatterns = [
     url(r'^locationDistance/$', LocationDistanceView.as_view(), name="location_distance"),
     url(r'^pointMapShow/$', PointMapView.as_view(), name="point_map_show"),
     url(r'^recordLocationDistance/$', RecordLocationDistanceView.as_view(), name="record_location_distance"),
+    url(r'^recordInfoModify/(?P<record_id>\d+)/$', RecordInfoModifyView.as_view(), name='record_modify'),
 
 ]

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = "dzt"
 __date__ = "2019/9/4"
-from .models import LocationInfo, DevicesInfo
+from .models import LocationInfo, DevicesInfo, TestRecord
 from django import forms
 from rest_framework import serializers
 
@@ -35,3 +35,9 @@ class LocationOnlyInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = LocationInfo
         fields = ["imei", 'time', 'longitude', 'latitude', 'speed']
+
+
+class TestRecordForm(forms.ModelForm):
+    class Meta:
+        model = TestRecord
+        fields = ["remarks", "start_time", "end_time", "devices_id", "company"]

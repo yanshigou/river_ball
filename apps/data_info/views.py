@@ -8,7 +8,7 @@ from .models import LocationInfo, DevicesOneNetInfo, TestRecord
 from users.models import UserProfile
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
-from .forms import LocationInfoSerializer, DevicesInfoSerializer
+from .forms import LocationInfoSerializer, DevicesInfoSerializer, TestRecordForm
 from rest_framework.views import APIView
 from django.core.urlresolvers import reverse
 import re
@@ -50,7 +50,17 @@ class RecordInfoView(LoginRequiredMixin, View):
         now_time = datetime.now().replace(microsecond=0)
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         if permission == 'superadmin':
-            all_test_record = TestRecord.objects.all()
+            all_test_record = TestRecord.objects.all().values()
+            for record in all_test_record:
+                imei_id_list = (record['devices_id']).split(',')
+                devices = DevicesInfo.objects.filter(id__in=imei_id_list)
+                if devices:
+                    record['devices_id'] = ",".join(i.desc for i in devices)
+                    record['company_id'] = devices[0].company.company_name
+                else:
+                    record['devices_id'] = ""
+                    record['company_id'] = ""
+
         else:
             try:
                 company = request.user.company.company_name
@@ -63,23 +73,17 @@ class RecordInfoView(LoginRequiredMixin, View):
                     "end_time": now_time
                 })
             if company:
-                all_test_record = TestRecord.objects.filter(company__company_name=company)
+                all_test_record = TestRecord.objects.filter(company__company_name=company).values()
+                for record in all_test_record:
+                    imei_id_list = (record['devices_id']).split(',')
+                    devices = DevicesInfo.objects.filter(id__in=imei_id_list)
+                    record['devices_id'] = ",".join(i.desc for i in devices)
             else:
                 all_test_record = ""
         return render(request, 'select2_device.html', {
             "all_test_record": all_test_record,
             "start_time": start_time,
             "end_time": now_time
-        })
-
-    def post(self, request):
-        start_time = request.POST.get('start_time', '')
-        end_time = request.POST.get('end_time', '')
-        record_id = request.POST.getlist('checkbox', '')
-        print(start_time)
-        print(end_time)
-        return JsonResponse({
-            "error_no": 0
         })
 
 
@@ -832,14 +836,14 @@ class RecordTrackView(LoginRequiredMixin, View):
         devcount = 0
         for dev in devlist.data:
             path_list = list()
-            speed_list = list()
+            # speed_list = list()
             # print(sendlist)
             for ix in enumerate(sendlist):
                 if sendlist[ix[0]][1 + devcount * 3] != "" and sendlist[ix[0]][1 + devcount * 3] != "0":
                     path_list.append([sendlist[ix[0]][1 + devcount * 3], sendlist[ix[0]][2 + devcount * 3]])
             if len(path_list) > 0:
                 dict_path = dict()
-                dict_path["name"] = dev["imei"]
+                dict_path["name"] = dev["desc"]
                 json_list.append(dict_path)
                 dict_path["path"] = path_list
             devcount = devcount + 1
@@ -1924,4 +1928,53 @@ class PointMapView(APIView):
         return render(request, "point_map.html", {
             "lon": lon,
             "lat": lat
+        })
+
+
+class RecordInfoModifyView(LoginRequiredMixin, View):
+    """
+    修改测量记录信息
+    """
+
+    def get(self, request, record_id):
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            record_info = TestRecord.objects.get(id=record_id)
+            devices = DevicesInfo.objects.all().values()
+            for i in devices:
+                i['id'] = str(i['id'])
+            return render(request, "record_modify.html", {
+                "record_info": record_info,
+                "devices": devices,
+            })
+        else:
+            try:
+                company_id = request.user.company.id
+                record_info = TestRecord.objects.get(id=record_id, company_id=company_id)
+                devices = DevicesInfo.objects.all().values()
+                for i in devices:
+                    i['id'] = str(i['id'])
+                return render(request, "record_modify.html", {
+                    "record_info": record_info,
+                    "devices": devices,
+                })
+
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select2_device'))
+
+    def post(self, request, record_id):
+        record_info = TestRecord.objects.get(id=record_id)
+        request_post = request.POST.copy()
+        devices_id_list = request_post.getlist('devices_id')
+        request_post['devices_id'] = ",".join(devices_id_list)
+        # print(request_post)
+        record_form = TestRecordForm(request_post, instance=record_info)
+        if record_form.is_valid():
+            record_form.save()
+            create_history_record(request.user, '修改测量记录 %s 的信息 为 %s ' % (record_info.remarks, request.POST.get('remarks')))
+            return JsonResponse({"status": "success"})
+        return JsonResponse({
+            "status": "fail"
         })
