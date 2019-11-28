@@ -88,11 +88,11 @@
 
                     if (pointIndex >= 0) {
                         //point 
-                        var sp = obj[0].speed[pointIndex][1]
+                        //var sp = obj[0].speed[pointIndex][1];
                   
                         return pathData.name + '，时间：' + obj[0].speed[pointIndex][0] + '速度' + obj[0].speed[pointIndex][1];
                     }
-                    console.log(pointIndex);
+                    {#console.log(pointIndex);#}
                     return "";//pathData.name + '，点数量' + pathData.path.length;
                 },
                 renderOptions: {

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+
+    
+<head>
+            <!-- 原始地址：//webapi.amap.com/ui/1.0/ui/geo/DistrictCluster/examples/plus-point-simplifier.html -->
+            
+    <base href="//webapi.amap.com/ui/1.0/ui/geo/DistrictCluster/examples/"/>
+            
+    <meta charset="utf-8">
+            
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+            <title>断面流量计算</title>
+            
+    <style>
+        html, body, #container {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+
+    </style>
+        
+</head>
+
+    
+<body>
+        
+<div id="container"> 
+</div>
+        
+<script type="text/javascript"
+        src='https://webapi.amap.com/maps?v=1.4.12&key=5cda232d2d1f782a634096167304eb59'></script>
+        <!-- UI组件库 1.0 -->
+        
+<script src="https://webapi.amap.com/ui/1.0/main.js?v=1.0.11"></script>
+        
+<script type="text/javascript">
+    //创建地图
+    var data = {{json_data | safe}};
+    var idx;
+    var point_center;
+    var map;
+    if (data.length > 0) {
+        idx = parseInt(data[0].path.length / 2);
+        point_center = data[0].path;
+        map = new AMap.Map('container', {
+            resizeEnable: true,
+            zoom: 11,
+            center: point_center[idx]
+        });
+        //console.log(idx);
+    }else{
+        map = new AMap.Map('container', {
+            resizeEnable: true,
+            zoom: 11,
+            center: [106.509920533, 29.5143553667]
+        });
+    }
+
+
+    function addMark(lng, lat) {
+        // 创建一个自定义内容的 infowindow 实例
+        var infoWindowContent = "当前坐标点：<br>" + lng + ", " + lat + "<br>中泓浮标系数：<input type=\"text\" value=\"0.85\"><br><br>过水面积：<input type=\"text\"><br><br>速度：<input type=\"text\" value=\"待填充\"><br><br><button onclick=\"calculateFlowValue()\">计算</button>";
+        var infoWindow = new AMap.InfoWindow({
+            position: [lng, lat],
+            offset: new AMap.Pixel(0, 0),
+            content: infoWindowContent
+        });
+        infoWindow.open(map);
+    }
+
+    function initPage(PointSimplifier, $) {
+        var pointSimplifierIns = new PointSimplifier({
+            map: map, //所属的地图实例
+            autoSetFitView: false, //禁止自动更新地图视野
+            zIndex: 110,
+            getPosition: function (item) {
+
+                if (!item) {
+                    return null;
+                }
+                var lngLatLine = item.lngLatLine;
+
+                if (!lngLatLine) {
+                    return null;
+                }
+
+                var parts = lngLatLine.split(',');
+                //返回经纬度
+                return [parseFloat(parts[0]), parseFloat(parts[1])];
+            },
+            //使用GroupStyleRender
+            renderConstructor: PointSimplifier.Render.Canvas.GroupStyleRender,
+            getHoverTitle: function (dataItem, idx) {
+                console.log("dataItem:" + dataItem.lngLatLine);
+                var lnglat = dataItem.lngLatLine.split(",");
+                addMark(lnglat[0], lnglat[1]);
+            },
+            renderOptions: {
+                //点的样式
+                pointStyle: {
+                    width: 30,
+                    height: 30,
+                    //fillStyle: 'rgba(153, 0, 153, 0.38)'
+                },
+                getGroupId: function (item, idx) {
+                    //console.log(item,idx);
+                    return item.groupId;
+                },
+                groupStyleOptions: function (gid) {
+
+                    return groupStyleMap[gid];
+                }
+            }
+        });
+
+        function onIconLoad() {
+            pointSimplifierIns.renderLater();
+        }
+
+        function onIconError(e) {
+            alert('图片加载失败！');
+        }
+
+        groupStyleMap = {
+            '0': {
+                pointStyle: {
+                    //绘制点占据的矩形区域
+                    content: PointSimplifier.Render.Canvas.getImageContent(
+                        'http://192.168.31.54:8088/media/image/point3.png', onIconLoad, onIconError),
+                    //宽度
+                    width: 30,
+                    //高度
+                    height: 30,
+                    //定位点为中心
+                    offset: ['-50%', '-50%'],
+                    fillStyle: null,
+                    //strokeStyle: null
+                }
+            },
+            '1': {
+                pointStyle: {
+                    //绘制点占据的矩形区域
+                    content: PointSimplifier.Render.Canvas.getImageContent(
+                        'http://a.amap.com/jsapi_demos/static/images/green.png', onIconLoad, onIconError),
+                    //宽度
+                    width: 10,
+                    //高度
+                    height: 10,
+                    //定位点为中心
+                    offset: ['-50%', '-50%'],
+                    fillStyle: null,
+                    // strokeStyle: null
+                }
+            }
+        };
+
+
+        function refresh() {
+
+            var zoom = map.getZoom();
+            //console.log("zoom:" + zoom);
+            //获取 pointStyle
+            var pointStyle = pointSimplifierIns.getRenderOptions().pointStyle;
+
+            //根据当前zoom调整点的尺寸
+            pointStyle.width = pointStyle.height = 2 * Math.pow(1.2, map.getZoom() - 3);
+        }
+
+        map.on('zoomend', function () {
+            refresh();
+        });
+
+        refresh();
+
+        //$('<div id="loadingTip">加载数据，请稍候...</div>').appendTo(document.body);
+        //$.get('https://a.amap.com/amap-ui/static/data/10w.txt', function (csv) {
+//
+        //   $('#loadingTip').remove();
+        //   console.log("调用数据", csv);
+//
+        //  var lines = csv.split('\n');
+        //  data = [];
+//
+        //  for (var i = 0, len = lines.length; i < len; i++) {
+        //      data.push({
+        //         lngLatLine: lines[i],
+        //         groupId: i % 2
+        //    });
+        //  }
+        //  console.log('data',data);
+        //  distCluster.setData(data);
+        //  pointSimplifierIns.setData(data);
+        //});
+        data2 = [];
+        for (var i = 0, len = data[0].path.length; i < len; i++) {
+            var lng_lat = data[0].path;
+            data2.push({
+                lngLatLine: lng_lat[i][0] + "," + lng_lat[i][1],
+                groupId: 0
+            });
+        }
+        console.log(data2);
+        //distCluster.setData(data2);
+        pointSimplifierIns.setData(data2);
+    }
+
+    //加载相关组件
+    AMapUI.load(['ui/misc/PointSimplifier', 'lib/$'], function (PointSimplifier, $) {
+
+        //启动页面
+        initPage(PointSimplifier, $);
+    });
+    function calculateFlowValue() {
+            alert('待计算')
+        }
+</script>
+    
+</body>
+
+</html>

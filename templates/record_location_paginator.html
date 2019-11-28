@@ -38,11 +38,11 @@
         {% for desc in desc_list %}
             <p >
             <h6>{{ desc.desc }}:</h6>
-            &nbsp;&nbsp;&nbsp;&nbsp;<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a>
-            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}" style="display: none">
-            &nbsp;&nbsp;&nbsp;&nbsp;总里程约：<a id="total_nums{{ desc.id }}"></a> 米，
-            <a id="total_nums2{{ desc.id }}"></a> 千米 <br>
-            &nbsp;&nbsp;&nbsp;&nbsp;平均速度约： <a id="average_speed{{ desc.id }}"></a> 米/秒 <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮历时：<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a>
+            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}" >
+            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮距离：<a id="total_nums{{ desc.id }}">0</a> m
+            (<a id="total_nums2{{ desc.id }}">0</a> km) <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;平均流速： <a id="average_speed{{ desc.id }}">0</a> m/s <br>
             </p>
             <p style="display: none" id="max_list{{ desc.id }}">
 
@@ -140,7 +140,7 @@
                                         url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat;
                                         {#console.log(url);#}
                                     }
-                                    p_max_list.append('最大速度在：' + value.max_speed_time + '&nbsp; 速度为：' + value.max_speed + ' 米/秒 &nbsp;');
+                                    p_max_list.append('瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：' + value.max_speed + ' m/s &nbsp;');
                                     p_max_list.append('<a href="' +
                                         url + '" target="view_window">' + "<i class=\"fa fa-map-marker\"></i>" + '</a>' + '<br>');
                                     p_max_list.show();
@@ -148,10 +148,10 @@
 
                                 if (value.device_data.first_time) {
                                     $(zhi).html('&nbsp;至&nbsp;');
-                                    $(br).show();
+                                    {#$(br).show();#}
                                 } else {
                                     $(zhi).html('');
-                                    $(br).hide();
+                                    {#$(br).hide();#}
                                 }
                             }
                         });
