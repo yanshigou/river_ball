@@ -635,12 +635,12 @@ class RecordLocationDistanceView(APIView):
     def post(self, request):
         try:
             record_id = request.data.get('record_id')
-            invalid_speed = request.data.get('invalid_speed', 0.5)
+            # invalid_speed = request.data.get('invalid_speed', 0.5)
             print(record_id)
-            if invalid_speed:
-                invalid_speed = float(invalid_speed)
-            else:
-                invalid_speed = 0
+            # if invalid_speed:
+            #     invalid_speed = float(invalid_speed)
+            # else:
+            #     invalid_speed = 0
             test_record = TestRecord.objects.get(id=record_id)
             delta = timedelta(hours=8)
             start_time = test_record.start_time - delta
@@ -655,7 +655,7 @@ class RecordLocationDistanceView(APIView):
                 len_location_infos = len(location_infos)
                 total_nums = 0
                 average_speed = 0
-                is_continue = True
+                # is_continue = True
                 first_time = None
                 last_time = None
                 speed_list = list()
@@ -667,15 +667,15 @@ class RecordLocationDistanceView(APIView):
                             speed = float('%0.2f' % (float(speed) * 0.5144444))
                             speed_list.append(speed)
                             # 去掉首位速度小于改值这个值需要商讨确定
-                            if speed <= invalid_speed and is_continue:
-                                first_time = location_infos[i].time
-                                continue
+                            # if speed <= invalid_speed and is_continue:
+                            #     first_time = location_infos[i].time
+                            #     continue
                             # TODO 这里有bug，并不知道多个点没有移动定性固定值不行
                             # elif i+2000 > len_location_infos and speed <= invalid_speed:
                             #     continue
                             # print(i)
                             last_time = location_infos[i].time
-                            is_continue = False
+                            # is_continue = False
                             time_diff = time_difference(location_infos, i).seconds
                             # print(speed)
                             # print(time_diff)
@@ -1977,4 +1977,56 @@ class RecordInfoModifyView(LoginRequiredMixin, View):
             return JsonResponse({"status": "success"})
         return JsonResponse({
             "status": "fail"
+        })
+
+
+class CalculateFlowTrackView(LoginRequiredMixin, View):
+    """
+    轨迹回放
+    """
+
+    def get(self, request, imei_id, start_time, end_time):
+        # now_time = datetime.now()
+        # start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
+        start_time2 = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+        end_time2 = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S") + timedelta(hours=-8)
+
+        permission = request.user.permission
+        print(permission)
+        if permission == "superadmin":
+            location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                   time__lte=end_time2).order_by('time')
+        else:
+            try:
+                device = DevicesInfo.objects.filter(id=imei_id)
+                company = request.user.company.company_name
+                device_company = device[0].company.company_name
+            except TestRecord.DoesNotExist as e:
+                return HttpResponseRedirect(reverse('select_device'))
+            if company and device and device_company == company:
+                location = LocationInfo.objects.filter(imei_id=imei_id, time__gte=start_time2,
+                                                       time__lte=end_time2).order_by('time')
+            else:
+                return HttpResponseRedirect(reverse('select_device'))
+        json_list = list()
+        location_list = list()
+        speed_list = list()
+        dict_path = dict()
+        if len(location) > 0:
+            dict_path["name"] = location[0].imei.desc
+            for i in location:
+                if i.longitude and i.latitude:
+                    longitude, latitude = gps_conversion(i.longitude, i.latitude)
+                    location_list.append([longitude, latitude])
+                    speed_list.append([(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), i.speed])
+
+            dict_path["path"] = location_list
+            dict_path["speed"] = speed_list
+            json_list.append(dict_path)
+        if location:
+            s_e_point = gps_conversion(location[0].longitude, location[0].latitude)
+        else:
+            s_e_point = [106.53233, 29.522584]
+        return render(request, 'track_test2.html', {
+            "json_data": json_list, "s_e_point": s_e_point
         })
