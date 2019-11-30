@@ -2,15 +2,13 @@
 <html lang="zh-CN">
 
     
-<head>
-            <!-- 原始地址：//webapi.amap.com/ui/1.0/ui/geo/DistrictCluster/examples/plus-point-simplifier.html -->
-            
+<head>    
     <base href="//webapi.amap.com/ui/1.0/ui/geo/DistrictCluster/examples/"/>
             
     <meta charset="utf-8">
             
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
-            <title>断面流量计算</title>
+    <title>断面流量计算</title>
             
     <style>
         html, body, #container {
@@ -50,24 +48,29 @@
             center: point_center[idx]
         });
         //console.log(idx);
-    }else{
+    } else {
         map = new AMap.Map('container', {
             resizeEnable: true,
             zoom: 11,
-            center: [106.509920533, 29.5143553667]
+            // center: [106.509920533, 29.5143553667]  //不设置取ip地址定位
         });
     }
+    var url = window.location.host;
 
 
-    function addMark(lng, lat) {
+    function addMark(lng, lat, time, speed) {
         // 创建一个自定义内容的 infowindow 实例
-        var infoWindowContent = "当前坐标点：<br>" + lng + ", " + lat + "<br>中泓浮标系数：<input type=\"text\" value=\"0.85\"><br><br>过水面积：<input type=\"text\"><br><br>速度：<input type=\"text\" value=\"待填充\"><br><br><button onclick=\"calculateFlowValue()\">计算</button>";
+        //console.log(time);
+        //console.log(speed);
+        var infoWindowContent = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lng.slice(0,12) + ", " + lat.slice(0,11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>速度：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
         var infoWindow = new AMap.InfoWindow({
             position: [lng, lat],
             offset: new AMap.Pixel(0, 0),
             content: infoWindowContent
         });
-        infoWindow.open(map);
+        infoWindow.open(map);  // 之前为碰到就显示
+        //TODO 鼠标点击marker弹出自定义的信息窗体
+
     }
 
     function initPage(PointSimplifier, $) {
@@ -93,9 +96,12 @@
             //使用GroupStyleRender
             renderConstructor: PointSimplifier.Render.Canvas.GroupStyleRender,
             getHoverTitle: function (dataItem, idx) {
-                console.log("dataItem:" + dataItem.lngLatLine);
+                //console.log("dataItem:" + dataItem.lngLatLine);
                 var lnglat = dataItem.lngLatLine.split(",");
-                addMark(lnglat[0], lnglat[1]);
+                var time = dataItem.time;
+                var speed = dataItem.speed;
+                addMark(lnglat[0], lnglat[1], time, speed);
+
             },
             renderOptions: {
                 //点的样式
@@ -128,7 +134,7 @@
                 pointStyle: {
                     //绘制点占据的矩形区域
                     content: PointSimplifier.Render.Canvas.getImageContent(
-                        'http://192.168.31.54:8088/media/image/point3.png', onIconLoad, onIconError),
+                        "http://" + url + '/media/image/point3.png', onIconLoad, onIconError),
                     //宽度
                     width: 30,
                     //高度
@@ -194,14 +200,20 @@
         //  pointSimplifierIns.setData(data);
         //});
         data2 = [];
-        for (var i = 0, len = data[0].path.length; i < len; i++) {
-            var lng_lat = data[0].path;
-            data2.push({
-                lngLatLine: lng_lat[i][0] + "," + lng_lat[i][1],
-                groupId: 0
-            });
+        //console.log(data);
+        if (data.length > 0) {
+            for (var i = 0, len = data[0].path.length; i < len; i++) {
+                var lng_lat = data[0].path;
+                var time_speed = data[0].speed;
+                data2.push({
+                    lngLatLine: lng_lat[i][0] + "," + lng_lat[i][1],
+                    groupId: 0,  //此固定为0组的点样式
+                    time: time_speed[i][0],
+                    speed: time_speed[i][1]
+                });
+            }
         }
-        console.log(data2);
+        //console.log(data2);
         //distCluster.setData(data2);
         pointSimplifierIns.setData(data2);
     }
@@ -212,9 +224,28 @@
         //启动页面
         initPage(PointSimplifier, $);
     });
+
     function calculateFlowValue() {
-            alert('待计算')
+        var zhfbxs = $("#zhfbxs").val();
+        var gsmj = $("#gsmj").val();
+        var speed = $("#speed").val();
+        if (gsmj.length > 0 && speed.length > 0 && zhfbxs.length > 0) {
+            zhfbxs = Number(zhfbxs);
+            gsmj = Number(gsmj);
+            speed = Number(speed);
+            var res = zhfbxs * gsmj * speed;
+            if (isNaN(res)) {
+                alert("输入错误")
+            } else {
+                var dmll = $('#dmll');
+                dmll.html("");
+                //$('#infoWindow').append("断面流量：" + String(res) + " m<sup>3</sup>/s <br><br>")
+                dmll.html("断面流量：" + String(res) + " m<sup>3</sup>/s <br><br>")
+            }
+        }else{
+            alert("请输入数据")
         }
+    }
 </script>
     
 </body>
