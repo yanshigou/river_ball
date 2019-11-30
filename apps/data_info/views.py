@@ -2027,6 +2027,6 @@ class CalculateFlowTrackView(LoginRequiredMixin, View):
             s_e_point = gps_conversion(location[0].longitude, location[0].latitude)
         else:
             s_e_point = [106.53233, 29.522584]
-        return render(request, 'track_test2.html', {
+        return render(request, 'flow_track.html', {
             "json_data": json_list, "s_e_point": s_e_point
         })
