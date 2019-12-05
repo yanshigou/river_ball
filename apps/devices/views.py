@@ -168,6 +168,7 @@ class DeviceDelView(LoginRequiredMixin, View):
 
 class ShowMapView(View):
     def get(self, request):
+        d = datetime.now()
         file = MEDIA_ROOT + '/all_devices_info.txt'
         permission = request.user.permission
         # print(permission)
@@ -188,10 +189,8 @@ class ShowMapView(View):
         f = open(file, 'w+', encoding='utf-8')
         for device in all_devices:
             imei = device.imei
-            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
-            if location:
-                location = location[0]
-            else:
+            location = LocationInfo.objects.filter(imei__imei=imei).last()
+            if not location:
                 continue
             longitude = location.longitude
             latitude = location.latitude
@@ -214,9 +213,11 @@ class ShowMapView(View):
                 a = str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + "," + status + '\n'
                 f.write(a)
         f.close()
+        print("初始化耗时", datetime.now() - d)
         return render(request, "map.html")
 
     def post(self, request):
+        d = datetime.now()
         # file = MEDIA_ROOT + '/all_devices_info.txt'
         permission = request.user.permission
         # print(permission)
@@ -238,10 +239,8 @@ class ShowMapView(View):
         a = ""
         for device in all_devices:
             imei = device.imei
-            location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
-            if location:
-                location = location[0]
-            else:
+            location = LocationInfo.objects.filter(imei__imei=imei).last()
+            if not location:
                 continue
             longitude = location.longitude
             latitude = location.latitude
@@ -264,6 +263,7 @@ class ShowMapView(View):
                 a += str(longitude) + ',' + str(latitude) + ',' + imei + ',' + str(speed) + "," + status + '\n'
                 # f.write(a)
         # f.close()
+        print("刷新耗时", datetime.now()- d)
         return JsonResponse({"status": "success", "str_data": a})
 
 
