@@ -1,5 +1,5 @@
 #!/bin/sh
-NAME="uwsgi"
+NAME="river_ball_uwsgi"
 if [ ! -n "$NAME" ];then
     echo "no arguments"
     exit;
