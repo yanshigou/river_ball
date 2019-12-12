@@ -52,6 +52,13 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">上传频率（s） *</label>
+            <div class="col-md-5 col-sm-5 col-xs-12">
+                <input type="text" class="form-control" name="freq" value="{{ device_info.freq }}">
+            </div>
+        </div>
+
         <input type="hidden" value="{{ device_info.company.id }}" name="company">
         <div class="ln_solid"></div>
         <div class="form-group">
@@ -78,14 +85,26 @@
             async: true,
             success: function (data) {
                 if (data.status === "success") {
-                    alert('修改信息成功')
+                    alert('修改信息成功，' + data.msg);
                     window.location.href = "{% url 'devices_info' %}"
                 } else {
-                    if (data.msg) {
-                        alert(data.msg)
-                    } else {
-                        alert('修改信息失败')
-                    }
+                    var msg = "";
+                        if (data.errors) {
+                            $.each(data.errors, function (i, value) {
+                                if (i === 'freq') {
+                                    msg += "上传频率" + value
+                                }else if (i === 'desc'){
+                                    msg += "设备昵称" + value
+                                }
+                            })
+                        }else{
+                            msg = "修改失败"
+                        }
+                        if (data.msg){
+                            alert(data.msg)
+                        }else{
+                            alert(msg);
+                        }
                 }
             }
         })

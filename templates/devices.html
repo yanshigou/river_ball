@@ -60,11 +60,13 @@
                     <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
                         <thead class="thead-dark">
                         <tr>
+                            <th>在线状态</th>
                             <th>设备序列号</th>
                             <th>设备昵称</th>
                             <th>设备内部序列号</th>
                             <th>创建时间</th>
                             <th>状态</th>
+                            <th>上传频率（s）</th>
                             {% if request.user.permission == "superadmin" %}
                                 <th>所属公司</th>
                             {% endif %}
@@ -89,16 +91,21 @@
                         <tbody id="t_body">
                         {% for device in all_devices %}
                             <tr>
-                                <td>{{ device.imei.imei }}</td>
-                                <td>{{ device.imei.desc|default_if_none:"" }}</td>
-                                <td>{{ device.dev_id }}</td>
-                                <td>{{ device.imei.time }}</td>
-                                <td {% if device.imei.is_active %}style="color: green" {% else %}style="color: red"
+                                <td {% if device.is_online == "在线" %}style="color: green" {% else %}style="color: red"
                                     {% endif %}>
-                                    {% if device.imei.is_active %}已启用{% else %}已停用{% endif %}
+                                    {% if device.is_online == "在线" %}在线{% else %}离线{% endif %}
                                 </td>
+                                <td>{{ device.imei }}</td>
+                                <td>{{ device.desc }}</td>
+                                <td>{{ device.dev_id }}</td>
+                                <td>{{ device.time }}</td>
+                                <td {% if device.is_active %}style="color: green" {% else %}style="color: red"
+                                    {% endif %}>
+                                    {% if device.is_active %}已启用{% else %}已停用{% endif %}
+                                </td>
+                                <td>{{ device.freq }}</td>
                                 {% if request.user.permission == "superadmin" %}
-                                    <td>{{ device.imei.company.company_name|default_if_none:"" }}</td>
+                                    <td>{{ device.company|default_if_none:"" }}</td>
                                 {% endif %}
 
                                 <td>
@@ -112,12 +119,12 @@
 {#                                                查看#}
 {#                                            </button>#}
 {#                                        </a>#}
-                                        <a href="{% url 'device_modify' device.imei.id %}">
+                                        <a href="{% url 'device_modify' device.id %}">
                                             <button type="button" class="btn btn-warning btn-sm" style="line-height: 1">
                                                 修改
                                             </button>
                                         </a>
-                                        {% if device.imei.is_active %}
+                                        {% if device.is_active %}
                                             <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
                                                     onclick="return enable_device({{ device.id }}, false)">停用
                                             </button>{% else %}
@@ -126,7 +133,7 @@
                                             </button>
                                         {% endif %}
                                         <button type="button" class="btn btn-danger btn-sm"
-                                                onclick="return deviceb({{ device.imei.id }})" style="line-height: 1">删除
+                                                onclick="return deviceb({{ device.id }})" style="line-height: 1">删除
                                         </button>
                                     {% endif %}
                                 </td>
