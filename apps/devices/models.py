@@ -11,6 +11,7 @@ class DevicesInfo(models.Model):
     company = models.ForeignKey(CompanyModel, verbose_name='所属公司')
     time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
     is_active = models.BooleanField(default=True, verbose_name="是否启用")
+    freq = models.CharField(max_length=3, default=5, verbose_name="上传频率/s")
 
     class Meta:
         unique_together = ('imei', 'desc')

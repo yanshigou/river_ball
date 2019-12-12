@@ -4,7 +4,7 @@ __date__ = "2019/9/4"
 from django.conf.urls import url
 from .views import DevicesInfoView, DeviceAddView, DeviceView, DeviceModifyView, DeviceDelView, ShowMapView, \
     AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, \
-    DeviceActiveView, AppDeviceActiveView, DeviceInfoApiView, AllDeviceInfoApi
+    DeviceActiveView, AppDeviceActiveView, DeviceInfoApiView, AllDeviceInfoApi, QueryFreqApiView
 
 urlpatterns = [
     url(r'^info/$', DevicesInfoView.as_view(), name='devices_info'),
@@ -26,4 +26,7 @@ urlpatterns = [
     url(r'^deviceInfoApi/$', DeviceInfoApiView.as_view()),
     url(r'^allDeviceInfoApi/$', AllDeviceInfoApi.as_view()),
     url(r'^lastLocationApi/$', AppLastLocation.as_view()),
+
+    url(r'^sendFreqModify/$', AppLastLocation.as_view()),
+    url(r'^queryFreq/$', QueryFreqApiView.as_view()),
 ]

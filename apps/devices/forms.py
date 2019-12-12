@@ -9,7 +9,7 @@ from rest_framework import serializers
 class DevicesInfoForm(forms.ModelForm):
     class Meta:
         model = DevicesInfo
-        fields = ["imei", 'desc', 'company']
+        fields = ["imei", 'desc', 'company', 'freq']
 
 
 class DevicesInfoSerializer(serializers.ModelSerializer):

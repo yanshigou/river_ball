@@ -2,7 +2,7 @@
 from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
-from myutils.utils import create_history_record, gps_conversion, one_net_register
+from myutils.utils import create_history_record, gps_conversion, one_net_register, send_freq
 from .models import DevicesInfo, CompanyModel
 from data_info.models import LocationInfo, DevicesOneNetInfo
 from .forms import DevicesInfoForm, DeviceActiveForm, DevicesInfoSerializer
@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
 from datetime import datetime, timedelta
 from data_info.views import HttpResponseRedirect, reverse
+from django.http import HttpResponse
 from users.models import UserProfile
 from rest_framework.views import APIView
 
@@ -28,14 +29,38 @@ class DevicesInfoView(LoginRequiredMixin, View):
                 # print(company)
             except Exception as e:
                 print(e)
-                return HttpResponseRedirect(reverse('devices_info'))
+                return HttpResponseRedirect(reverse('index'))
             if company:
                 all_devices = DevicesOneNetInfo.objects.filter(imei__company__company_name=company)
             else:
-                all_devices = ""
+                all_devices = DevicesOneNetInfo.objects.filter(imei__company__company_name="")
+        all_data = list()
+        for device in all_devices:
+            imei = device.imei.imei
+            location = LocationInfo.objects.filter(imei__imei=imei).last()
+            status = "离线"
+            if location:
+                time = location.time
+                if time:
+                    now_time = datetime.now()
+                    if not (now_time + timedelta(minutes=-1) > (time + timedelta(hours=8))):
+                        status = "在线"
+
+            all_data.append({
+                "id": device.imei.id,
+                "is_online": status,
+                "imei": device.imei.imei,
+                "desc": device.imei.desc,
+                "dev_id": device.dev_id,
+                "time": device.imei.time,
+                "is_active": device.imei.is_active,
+                "freq": device.imei.freq,
+                "company": device.imei.company.company_name,
+            })
+        print(all_data)
         create_history_record(request.user, '查询所有设备')
         return render(request, 'devices.html', {
-            "all_devices": all_devices,
+            "all_devices": all_data,
         })
 
 
@@ -55,24 +80,28 @@ class DeviceAddView(LoginRequiredMixin, View):
                 company_id = request.user.company.id
             except Exception as e:
                 print(e)
-                return render(request, 'devices.html', {
-                    "all_devices": "",
-                })
+                return HttpResponseRedirect(reverse('devices_info'))
         return render(request, 'device_form_add.html', {"company_id": company_id})
 
     def post(self, request):
         # print(request.POST)
         device_form = DevicesInfoForm(request.POST)
-        if device_form.is_valid():
-            device_form.save()
-            imei, dev_id = one_net_register(request.POST.get('imei'))
-            imei_id = DevicesInfo.objects.get(imei=imei).id
-            if imei and dev_id:
-                DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
-                create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
-                return JsonResponse({"status": "success"})
-            return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
-        print(device_form.errors)
+        try:
+            if device_form.is_valid():
+                device_form.save()
+                imei, dev_id = one_net_register(request.POST.get('imei'))
+                imei_id = DevicesInfo.objects.get(imei=imei).id
+                if imei and dev_id:
+                    DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
+                    create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
+                    return JsonResponse({"status": "success"})
+                return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
+            print(device_form.errors)
+        except Exception as e:
+            return JsonResponse({
+                "status": "fail",
+                "errors": "出现未知错误请联系管理员" + str(e)
+            })
         return JsonResponse({
             "status": "fail",
             "errors": "设备IMEI号和昵称唯一且必填"
@@ -114,37 +143,70 @@ class DeviceModifyView(LoginRequiredMixin, View):
         permission = request.user.permission
         print(permission)
         if permission == 'superadmin':
-            device_info = DevicesInfo.objects.filter(id=device_id)[0]
-            return render(request, "device_form_modify.html", {
-                "device_info": device_info,
-            })
+            device_info = DevicesInfo.objects.get(id=device_id)
         else:
             try:
                 company_id = request.user.company.id
-                device_info = DevicesInfo.objects.filter(id=device_id, company_id=company_id)[0]
-                return render(request, "device_form_modify.html", {
-                    "device_info": device_info,
-                })
+                device_info = DevicesInfo.objects.get(id=device_id, company_id=company_id)
+
             except Exception as e:
                 print(e)
                 return HttpResponseRedirect(reverse('devices_info'))
+        return render(request, "device_form_modify.html", {
+            "device_info": device_info,
+        })
 
     def post(self, request, device_id):
-        deviceinfo = DevicesInfo.objects.get(id=device_id)
-        device_form = DevicesInfoForm(request.POST, instance=deviceinfo)
-        if device_form.is_valid():
-            device_form.save()
-            create_history_record(request.user, '修改设备 %s 的信息' % deviceinfo.imei)
-            return JsonResponse({"status": "success"})
-        # print(device_form.errors)
-        if 'area' in device_form.errors:
+        try:
+            deviceinfo = DevicesInfo.objects.get(id=device_id)
+            device_form = DevicesInfoForm(request.POST, instance=deviceinfo)
+            if device_form.is_valid():
+                device_form.save()
+                onenetinfo = DevicesOneNetInfo.objects.get(imei_id=device_id)
+                freq = request.POST.get('freq')
+                print(freq)
+                dev_id = onenetinfo.dev_id
+                res = send_freq(dev_id, freq).json()
+                print(res)
+                errno = res.get('errno')
+                if errno == 0:
+                    msg = '修改频率为 %s 发送成功' % freq
+                    create_history_record(request.user, msg)
+                elif errno == 10:
+                    msg = '修改频率为 %s，当前设备不在线' % freq
+                    create_history_record(request.user, msg)
+                else:
+                    msg = res.get('error')
+                create_history_record(request.user, '修改设备 %s 的信息' % deviceinfo.imei)
+                return JsonResponse({"status": "success", "msg": msg})
+            # print(device_form.errors)
+            # if 'area' in device_form.errors:
+            #     return JsonResponse({
+            #         "status": "fail",
+            #         "msg": "请重新选择片区！"
+            #     })
+            errors = dict(device_form.errors.items())
+            # print(errors)
             return JsonResponse({
                 "status": "fail",
-                "msg": "请重新选择片区！"
+                "errors": errors
             })
-        return JsonResponse({
-            "status": "fail"
-        })
+        except DevicesInfo.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "该设备不存在！"
+            })
+        except DevicesOneNetInfo.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "该设备未注册！"
+            })
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                "error_no": -1,
+                "info": str(e)
+            })
 
 
 class DeviceDelView(LoginRequiredMixin, View):
@@ -763,34 +825,58 @@ class DeviceInfoApiView(APIView):
             device_id = request.data.get('device_id')
             desc = request.data.get('desc')
             is_active = request.data.get('is_active')
+            freq = request.data.get('freq')
+            if not freq:
+                return JsonResponse({
+                    "error_no": -3,
+                    "info": "请正确填写上传频率"
+                })
 
             if permission == "superadmin":
                 device_info = DevicesInfo.objects.get(id=device_id)
                 device_info.is_active = is_active
                 device_info.desc = desc
                 device_info.is_active = is_active
+                device_info.freq = freq
                 device_info.save()
 
                 create_history_record(username, '修改设备 %s 的信息' % device_info.imei)
-                return JsonResponse({
-                    "error_no": 0
-                })
             elif permission == "admin":
                 company_id = user.company_id
                 device_info = DevicesInfo.objects.get(id=device_id, company_id=company_id)
                 device_info.is_active = is_active
                 device_info.desc = desc
                 device_info.is_active = is_active
+                device_info.freq = freq
                 device_info.save()
                 create_history_record(username, '修改设备 %s 的信息' % device_info.imei)
-                return JsonResponse({
-                    "error_no": 0
-                })
             else:
                 return JsonResponse({
                     "error_no": -2,
                     "info": "没有权限"
                 })
+            onenetinfo = DevicesOneNetInfo.objects.get(imei_id=device_id)
+            dev_id = onenetinfo.dev_id
+            res = send_freq(dev_id, freq).json()
+            print(res)
+            errno = res.get('errno')
+            if errno == 0:
+                msg = '修改频率为 %s 发送成功' % freq
+                create_history_record(request.user, msg)
+            elif errno == 10:
+                msg = '修改频率为 %s，当前设备不在线' % freq
+                create_history_record(request.user, msg)
+            else:
+                msg = res.get('error')
+            return JsonResponse({
+                "error_no": 0,
+                "msg": msg
+            })
+        except DevicesOneNetInfo.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "该设备未注册！"
+            })
         except UserProfile.DoesNotExist:
             return JsonResponse({
                 "error_no": -2,
@@ -890,3 +976,16 @@ class AllDeviceInfoApi(View):
                 "error_no": -1,
                 "info": str(e)
             })
+
+
+class QueryFreqApiView(APIView):
+    def get(self, request):
+        try:
+            dev_id = request.query_params.get('sn')
+            onenet_info = DevicesOneNetInfo.objects.get(dev_id=dev_id)
+        except DevicesOneNetInfo.DoesNotExist:
+            return HttpResponse(-2)
+        except Exception as e:
+            print(e)
+            return HttpResponse(-1)
+        return HttpResponse(onenet_info.imei.freq)
