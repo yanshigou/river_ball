@@ -27,6 +27,5 @@ urlpatterns = [
     url(r'^allDeviceInfoApi/$', AllDeviceInfoApi.as_view()),
     url(r'^lastLocationApi/$', AppLastLocation.as_view()),
 
-    url(r'^sendFreqModify/$', AppLastLocation.as_view()),
     url(r'^queryFreq/$', QueryFreqApiView.as_view()),
 ]

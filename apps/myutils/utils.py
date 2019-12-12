@@ -312,3 +312,17 @@ def jpush_function_extra(username, kind, summary, content):
         }
     }
     return requests.post(jpushurl, data=json.dumps(msg), headers=headers)
+
+
+def send_freq(device_id, freq):
+    """
+    下发命令 修改频率
+    :param device_id: 设备onenetid
+    :param freq: 频率 秒
+    :return:
+    """
+    url = 'http://api.heclouds.com/cmds?device_id=' + device_id
+    headers = {'api-key': '53zN4GhanUnVZ0cMSsAN9FI3QrM='}
+    body = "$RATE%s##" % freq
+    res = requests.post(url, data=body, headers=headers)
+    return res

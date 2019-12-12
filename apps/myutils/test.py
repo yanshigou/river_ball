@@ -107,8 +107,22 @@ def time_difference(location_infos, n):
     return location_infos[n].time - location_infos[n-1].time
 
 
+def send_freq(device_id, freq):
+    url = 'http://api.heclouds.com/cmds?device_id=' + device_id
+    headers = {'api-key': '53zN4GhanUnVZ0cMSsAN9FI3QrM='}
+    body = "$RATE%s##" % freq
+    print(url)
+    print(headers)
+    print(body)
+    res = requests.post(url, data=body, headers=headers)
+    return res
+
+
 if __name__ == '__main__':
     # res = jpush_function_extra("13883562563", "1", "预警速度测试", "预警速度测试内容")
     # print(res)
     # print(res.json())
-    print(gps_conversion("12016.31454", "3133.93492"))
+    # print(gps_conversion("12016.31454", "3133.93492"))
+    res = send_freq("545240679", 10)
+    print(res.json())
+
