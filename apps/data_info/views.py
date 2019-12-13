@@ -422,7 +422,11 @@ class LocationDistanceView(APIView):
                     first_time = location_infos[0].time
                 if not last_time:
                     last_time = location_infos[len(location_infos) - 1].time
-                average_speed = total_nums / (last_time - first_time).seconds
+                sec = (last_time - first_time).seconds
+                if sec != 0:
+                    average_speed = total_nums / sec
+                else:
+                    average_speed = total_nums / 1
                 first_time = datetime.strftime(first_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                 last_time = datetime.strftime(last_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                 max_speed = max(speed_list)
@@ -454,6 +458,8 @@ class LocationDistanceView(APIView):
                         break
                 # print(max_list)
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 return JsonResponse({
                     "total_nums": '%.2f' % total_nums,
                     "total_nums2": '%.1f' % (total_nums / 1000),
@@ -1125,7 +1131,7 @@ class OneNetDataView(APIView):
                         for d in data_list:
                             d_list = d.split(',')
                             if len(d) > 10 and d_list[0] == '$GNRMC':
-                                print('$GNRMC', d_list)
+                                # print('$GNRMC', d_list)
                                 time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
                                 longitude = d_list[5]
                                 latitude = d_list[3]
@@ -1134,12 +1140,12 @@ class OneNetDataView(APIView):
                                 EW_hemisphere = d_list[6]
                                 NS_hemisphere = d_list[4]
                             elif len(d) > 10 and d_list[0] == '$GNGGA':
-                                print('$GNGGA', d_list)
+                                # print('$GNGGA', d_list)
                                 satellites = d_list[7]
                                 accuracy = d_list[8]
                                 altitude = d_list[9]
                             elif 'VOL' in d_list[0] or 'CHG' in d_list[0] or 'FUL' in d_list[0]:
-                                print('power', d_list)
+                                # print('power', d_list)
                                 power = d_list[0]
 
                         location_sers = LocationInfoSerializer(data={
