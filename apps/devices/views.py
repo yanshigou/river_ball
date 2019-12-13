@@ -13,6 +13,7 @@ from data_info.views import HttpResponseRedirect, reverse
 from django.http import HttpResponse
 from users.models import UserProfile
 from rest_framework.views import APIView
+from time import sleep
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
@@ -172,6 +173,11 @@ class DeviceModifyView(LoginRequiredMixin, View):
                 if errno == 0:
                     msg = '修改频率为 %s 发送成功' % freq
                     create_history_record(request.user, msg)
+                    # 如果成功再连续发4次
+                    for _ in range(4):
+                        sleep(0.4)
+                        res = send_freq(dev_id, freq)
+                        print(datetime.now(), res.json())
                 elif errno == 10:
                     msg = '修改频率为 %s，当前设备不在线' % freq
                     create_history_record(request.user, msg)
@@ -862,20 +868,25 @@ class DeviceInfoApiView(APIView):
             errno = res.get('errno')
             if errno == 0:
                 msg = '修改频率为 %s 发送成功' % freq
-                create_history_record(request.user, msg)
+                create_history_record(username, msg)
+                # 如果成功再连续发4次
+                for _ in range(4):
+                    sleep(0.4)
+                    res = send_freq(dev_id, freq)
+                    print(datetime.now(), res.json())
             elif errno == 10:
                 msg = '修改频率为 %s，当前设备不在线' % freq
-                create_history_record(request.user, msg)
+                create_history_record(username, msg)
             else:
                 msg = res.get('error')
             return JsonResponse({
                 "error_no": 0,
-                "msg": msg
+                "info": msg
             })
         except DevicesOneNetInfo.DoesNotExist:
             return JsonResponse({
                 "status": "fail",
-                "msg": "该设备未注册！"
+                "info": "该设备未注册！"
             })
         except UserProfile.DoesNotExist:
             return JsonResponse({
@@ -981,8 +992,8 @@ class AllDeviceInfoApi(View):
 class QueryFreqApiView(APIView):
     def get(self, request):
         try:
-            dev_id = request.query_params.get('sn')
-            onenet_info = DevicesOneNetInfo.objects.get(dev_id=dev_id)
+            imei = request.query_params.get('sn')
+            onenet_info = DevicesOneNetInfo.objects.get(imei__imei=imei)
         except DevicesOneNetInfo.DoesNotExist:
             return HttpResponse(-2)
         except Exception as e:
