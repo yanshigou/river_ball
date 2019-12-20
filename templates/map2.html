@@ -8,6 +8,7 @@
     {#    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>#}
     <style type="text/css">
         body, html, #container {
+            width: 100%;
             height: 100%;
             margin: 0;
             font: 12px Arial;
@@ -44,7 +45,7 @@
     <title>地图显示</title>
 </head>
 <body>
-<div id="container" tabindex="0"></div>
+<div id="container"></div>
 <script src="https://webapi.amap.com/maps?v=1.4.15&key=5cda232d2d1f782a634096167304eb59"></script>
 <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
 <script type="text/javascript">
