@@ -366,29 +366,31 @@ class ShowMap2View(LoginRequiredMixin, View):
             if time:
                 now_time = datetime.now()
                 if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
-                    status = "离线"
+                    status = 0
                 else:
-                    status = "在线"
+                    status = 1
             else:
-                status = "离线"
-            if longitude and latitude and speed and status == "在线":
+                status = 0
+            if longitude and latitude and speed and status == 1:
                 speed = float('%0.2f' % (float(speed) * 0.5144444))
                 longitude, latitude = gps_conversion(longitude, latitude)
                 devices_data.append({
                     "imei": imei,
                     "device_id": device_id,
                     "desc": desc,
+                    "type": status,
                     "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
                     "speed": speed,
                     "longitude": longitude,
                     "latitude": latitude,
                 })
-            elif longitude and latitude and speed and status == "离线":
+            elif longitude and latitude and speed and status == 0:
                 longitude, latitude = gps_conversion(longitude, latitude)
                 devices_data.append({
                     "imei": imei,
                     "device_id": device_id,
                     "desc": desc,
+                    "type": status,
                     "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
                     "speed": "离线中",
                     "longitude": longitude,
@@ -428,29 +430,31 @@ class ShowMap2View(LoginRequiredMixin, View):
             if time:
                 now_time = datetime.now()
                 if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
-                    status = "离线"
+                    status = 0
                 else:
-                    status = "在线"
+                    status = 1
             else:
-                status = "离线"
-            if longitude and latitude and speed and status == "在线":
+                status = 0
+            if longitude and latitude and speed and status == 1:
                 speed = float('%0.2f' % (float(speed) * 0.5144444))
                 longitude, latitude = gps_conversion(longitude, latitude)
                 devices_data.append({
                     "imei": imei,
                     "device_id": device_id,
                     "desc": desc,
+                    "type": status,
                     "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
                     "speed": speed,
                     "longitude": longitude,
                     "latitude": latitude,
                 })
-            elif longitude and latitude and speed and status == "离线":
+            elif longitude and latitude and speed and status == 0:
                 longitude, latitude = gps_conversion(longitude, latitude)
                 devices_data.append({
                     "imei": imei,
                     "device_id": device_id,
                     "desc": desc,
+                    "type": status,
                     "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
                     "speed": "离线中",
                     "longitude": longitude,
