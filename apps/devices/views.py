@@ -14,6 +14,7 @@ from django.http import HttpResponse
 from users.models import UserProfile
 from rest_framework.views import APIView
 from time import sleep
+from datetime import datetime
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
@@ -335,6 +336,132 @@ class ShowMapView(View):
         return JsonResponse({"status": "success", "str_data": a})
 
 
+class ShowMap2View(LoginRequiredMixin, View):
+    def get(self, request):
+        permission = request.user.permission
+        if permission == 'superadmin':
+            all_devices = DevicesInfo.objects.filter(is_active=True)
+        else:
+            try:
+                company = request.user.company.company_name
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company:
+                all_devices = DevicesInfo.objects.filter(company__company_name=company, is_active=True)
+            else:
+                all_devices = []
+        devices_data = list()
+        for device in all_devices:
+            imei = device.imei
+            device_id = device.id
+            desc = device.desc
+            location = LocationInfo.objects.filter(imei__imei=imei).last()
+            if not location:
+                continue
+            longitude = location.longitude
+            latitude = location.latitude
+            speed = location.speed
+            time = location.time
+            if time:
+                now_time = datetime.now()
+                if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                    status = "离线"
+                else:
+                    status = "在线"
+            else:
+                status = "离线"
+            if longitude and latitude and speed and status == "在线":
+                speed = float('%0.2f' % (float(speed) * 0.5144444))
+                longitude, latitude = gps_conversion(longitude, latitude)
+                devices_data.append({
+                    "imei": imei,
+                    "device_id": device_id,
+                    "desc": desc,
+                    "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
+                    "speed": speed,
+                    "longitude": longitude,
+                    "latitude": latitude,
+                })
+            elif longitude and latitude and speed and status == "离线":
+                longitude, latitude = gps_conversion(longitude, latitude)
+                devices_data.append({
+                    "imei": imei,
+                    "device_id": device_id,
+                    "desc": desc,
+                    "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
+                    "speed": "离线中",
+                    "longitude": longitude,
+                    "latitude": latitude,
+                })
+
+        print(devices_data)
+        return render(request, "map2.html", {"devices_data": devices_data})
+
+    def post(self, request):
+        d = datetime.now()
+        permission = request.user.permission
+        if permission == 'superadmin':
+            all_devices = DevicesInfo.objects.filter(is_active=True)
+        else:
+            try:
+                company = request.user.company.company_name
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('devices_info'))
+            if company:
+                all_devices = DevicesInfo.objects.filter(company__company_name=company, is_active=True)
+            else:
+                all_devices = []
+        devices_data = list()
+        for device in all_devices:
+            imei = device.imei
+            device_id = device.id
+            desc = device.desc
+            location = LocationInfo.objects.filter(imei__imei=imei).last()
+            if not location:
+                continue
+            longitude = location.longitude
+            latitude = location.latitude
+            speed = location.speed
+            time = location.time
+            if time:
+                now_time = datetime.now()
+                if now_time + timedelta(minutes=-1) > (time + timedelta(hours=8)):
+                    status = "离线"
+                else:
+                    status = "在线"
+            else:
+                status = "离线"
+            if longitude and latitude and speed and status == "在线":
+                speed = float('%0.2f' % (float(speed) * 0.5144444))
+                longitude, latitude = gps_conversion(longitude, latitude)
+                devices_data.append({
+                    "imei": imei,
+                    "device_id": device_id,
+                    "desc": desc,
+                    "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
+                    "speed": speed,
+                    "longitude": longitude,
+                    "latitude": latitude,
+                })
+            elif longitude and latitude and speed and status == "离线":
+                longitude, latitude = gps_conversion(longitude, latitude)
+                devices_data.append({
+                    "imei": imei,
+                    "device_id": device_id,
+                    "desc": desc,
+                    "time": datetime.strftime(time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S"),
+                    "speed": "离线中",
+                    "longitude": longitude,
+                    "latitude": latitude,
+                })
+
+        print(devices_data)
+        print("刷新耗时", datetime.now() - d)
+        return JsonResponse({"status": "success", "devices_data": devices_data})
+
+
 class test11(LoginRequiredMixin, View):
     def get(self, request):
         all_devices = DevicesInfo.objects.all()
@@ -367,9 +494,9 @@ class test11(LoginRequiredMixin, View):
         return render(request, '111.html', {"data": data})
 
 
-class ShowMap2View(View):
-    def get(self, request):
-        return render(request, "map_show.html", {})
+# class ShowMap2View(View):
+#     def get(self, request):
+#         return render(request, "map_show.html", {})
 
 
 class AppLastLocation(APIView):
