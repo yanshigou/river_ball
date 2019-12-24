@@ -1930,10 +1930,14 @@ class AppTestRecordLocationListApiView(APIView):
 class PointMapView(APIView):
     def get(self, request):
         lon, lat = request.query_params.get('lon'), request.query_params.get('lat')
+        speed = request.query_params.get('speed')
+        time = request.query_params.get('time')
         # print(lon, lat)
         return render(request, "point_map.html", {
             "lon": lon,
-            "lat": lat
+            "lat": lat,
+            "speed": speed,
+            "time": time,
         })
 
 
