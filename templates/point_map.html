@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
-    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+{#    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>#}
     <link rel="icon" type="image/png" href="{% static 'images/favicon.ico' %}">
     <title>地图显示</title>
     <style>
@@ -28,7 +28,7 @@
     var lon = {{ lon|safe }};
     var lat = {{ lat|safe }};
     var map = new AMap.Map('container', {
-        zoom:15,//级别
+        zoom: 15,//级别
         center: [lon, lat],//中心点坐标
     });
     var marker = new AMap.Marker({
@@ -36,6 +36,61 @@
         title: '峰值点'
     });
     map.add(marker);
+    var time = "{{ time|safe }}";
+    var speed = {{ speed|safe }};
+    var content = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lon.toString().slice(0, 12) + ", " + lat.toString().slice(0, 11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>流速：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
+    marker.content = content;
+    marker.on('click', markerClick);
+    marker.emit('click', {target: marker});
+    //addMark(lon.toString(), lat.toString(), "2019-12-24 00:00:00", "0.5");
+
+    //function addMark(lng, lat, time, speed) {
+        // 创建一个自定义内容的 infowindow 实例
+        //console.log(time);
+        //console.log(speed);
+        //var infoWindowContent = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lng.slice(0, 12) + ", " + lat.slice(0, 11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>流速：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
+        //var infoWindow = new AMap.InfoWindow({
+        //    position: [lng, lat],
+        //    offset: new AMap.Pixel(0, 0),
+        //    content: infoWindowContent
+        //});
+        //infoWindow.open(map);  // 之前为碰到就显示
+        //TODO 鼠标点击marker弹出自定义的信息窗体
+
+    //}
+    function markerClick(e) {
+        infoWindow.setContent(e.target.content);
+        infoWindow.open(map, e.target.getPosition());
+    }
+
+
+    function calculateFlowValue() {
+        var zhfbxs = $("#zhfbxs").val();
+        var gsmj = $("#gsmj").val();
+        var speed = $("#speed").val();
+        var c_info = $("#info");
+        c_info.html("");
+        //total_nums = AMap.GeometryUtil.distanceOfLine(data[0].path);
+        //console.log(total_nums);
+        //c_info.html("高德地图计算出所有点坐标路径长度为：" + String(total_nums) + " （米） <br><br>");
+        if (gsmj.length > 0 && speed.length > 0 && zhfbxs.length > 0) {
+            zhfbxs = Number(zhfbxs);
+            gsmj = Number(gsmj);
+            speed = Number(speed);
+            var res = zhfbxs * gsmj * speed;
+            if (isNaN(res)) {
+                alert("输入错误")
+            } else {
+                var dmll = $('#dmll');
+                dmll.html("");
+                //$('#infoWindow').append("断面流量：" + String(res) + " m<sup>3</sup>/s <br><br>")
+                dmll.html("断面流量：" + String(res) + " m<sup>3</sup>/s <br><br>")
+            }
+        } else {
+            alert("请输入数据")
+        }
+    }
 </script>
 </body>
 </html>
