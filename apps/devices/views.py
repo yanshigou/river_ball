@@ -3,9 +3,9 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, gps_conversion, one_net_register, send_freq
-from .models import DevicesInfo, CompanyModel
+from .models import DevicesInfo, CompanyModel, DevicesRegister, DeviceExcelInfo
 from data_info.models import LocationInfo, DevicesOneNetInfo
-from .forms import DevicesInfoForm, DeviceActiveForm, DevicesInfoSerializer
+from .forms import DevicesInfoForm, DeviceActiveForm, DevicesInfoSerializer, DeviceExcelForm
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
 from datetime import datetime, timedelta
@@ -15,6 +15,8 @@ from users.models import UserProfile
 from rest_framework.views import APIView
 from time import sleep
 from datetime import datetime
+from django.db.models import Q
+import xlrd
 
 
 class DevicesInfoView(LoginRequiredMixin, View):
@@ -59,10 +61,144 @@ class DevicesInfoView(LoginRequiredMixin, View):
                 "freq": device.imei.freq,
                 "company": device.imei.company.company_name,
             })
-        print(all_data)
+        # print(all_data)
         create_history_record(request.user, '查询所有设备')
         return render(request, 'devices.html', {
             "all_devices": all_data,
+        })
+
+
+class DevicesRegisterInfoView(LoginRequiredMixin, View):
+
+    def get(self, request):
+        # all_devices = DevicesInfo.objects.all()
+        permission = request.user.permission
+        print(permission)
+        if permission == 'superadmin':
+            all_devices = DevicesRegister.objects.all()
+        else:
+            return HttpResponseRedirect(reverse('devices_info'))
+        all_data = list()
+        for device in all_devices:
+            if device.company:
+                all_data.append({
+                    "id": device.id,
+                    "device_imei": device.device_imei,
+                    "device_code": device.device_code,
+                    "company": device.company.company_name,
+                })
+            else:
+                all_data.append({
+                    "id": device.id,
+                    "device_imei": device.device_imei,
+                    "device_code": device.device_code,
+                    "company": "",
+                })
+        # print(all_data)
+        create_history_record(request.user, '查询所有内部设备')
+        return render(request, 'all_devices.html', {
+            "all_devices": all_data,
+        })
+
+    def post(self, request):
+        """
+        删除
+        """
+        permission = request.user.permission
+        print(permission)
+        device_id = request.POST.get('device_id')
+        print(device_id)
+        try:
+            if permission == 'superadmin':
+                device = DevicesRegister.objects.get(id=device_id)
+                device_imei = device.device_imei
+                device.delete()
+                create_history_record(request.user, '删除内部设备 %s' % device_imei)
+                return JsonResponse({
+                    "status": "success"
+                })
+            else:
+                return JsonResponse({
+                    "status": "fail",
+                    "msg": "没有权限！"
+                })
+        except DevicesRegister.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "该设备不存在"
+            })
+        except Exception as e:
+            return JsonResponse({
+                "status": "fail",
+                "errors": "出现未知错误请联系管理员" + str(e)
+            })
+
+
+class DevicesRegisterExcelView(LoginRequiredMixin, View):
+    """
+    导入excel注册设备
+    """
+
+    def post(self, request):
+        excel_form = DeviceExcelForm(request.POST, request.FILES)
+        if excel_form.is_valid():
+            # 获取表单数据
+            excel_info = excel_form.cleaned_data['excelInfo']
+            excel_file = excel_form.cleaned_data['excelFile']
+            file = DeviceExcelInfo.objects.create(excelFile=excel_file, excelInfo=excel_info)
+            filename = file.excelFile
+            src = MEDIA_ROOT + '/%s' % filename  # 连接成上传文件的路径
+            rb = xlrd.open_workbook(filename=src)  # 打开文件
+            sheet1 = rb.sheet_by_index(0)  # 通过索引获取第一张表格
+            cols = sheet1.col_values(0)  # 获取列内容 list
+            ok_count = 0
+            fail_count = 0
+
+            for i in range(1, len(cols)):
+                try:
+                    rows = sheet1.row_values(i)  # 获取行内容 list
+
+                    device_code = rows[0]
+                    if device_code:
+                        device_code = int(device_code)
+                    device_imei = int(rows[1])
+                    company_name = rows[2]
+                    device_info = DevicesRegister.objects.filter(Q(device_code=device_code) | Q(device_imei=device_imei))
+                    if device_info:
+                        device_info = device_info[0]
+                    else:
+                        device_info = DevicesRegister.objects.create(device_code=device_code, device_imei=device_imei)
+                    if company_name:
+                        try:
+                            company_id = CompanyModel.objects.get(company_name=company_name)
+                            device_info.company_id = company_id
+                            device_info.save()
+                        except CompanyModel.DoesNotExist:
+                            fail_count += 1
+                        create_history_record(request.user, '批量激活设备 %s' % device_imei)
+                    else:
+                        create_history_record(request.user, '批量注册设备 %s' % device_imei)
+                    ok_count += 1
+                except Exception as e:
+                    # traceback.print_exc()
+                    print(e)
+                    fail_count += 1
+                    continue
+
+            form = DeviceExcelForm()
+            # print(ok_count, fail_count)
+            return render(request, 'upload_result.html', {
+                "ok_count": ok_count,
+                "fail_count": fail_count,
+                "excel_form": form
+            })
+
+        return HttpResponseRedirect(reverse('device_add'))
+
+    def get(self, request):
+        form = DeviceExcelForm()
+        return render(request, 'upload_result.html', {
+            "excel_form": form
         })
 
 
@@ -88,7 +224,27 @@ class DeviceAddView(LoginRequiredMixin, View):
     def post(self, request):
         # print(request.POST)
         device_form = DevicesInfoForm(request.POST)
+        device_imei = request.POST.get('imei')
+        company_id = request.POST.get('company')
         try:
+            device_register = DevicesRegister.objects.get(Q(device_code=device_imei) | Q(device_imei=device_imei))
+            if device_register:
+                if device_register.company:
+                    if not str(device_register.company.id) == company_id:
+                        return JsonResponse({
+                            "status": "fail",
+                            "errors": "该设备没有激活，请联系客服"
+                        })
+                else:
+                    return JsonResponse({
+                        "status": "fail",
+                        "errors": "该设备没有激活，请联系客服"
+                    })
+            else:
+                return JsonResponse({
+                    "status": "fail",
+                    "errors": "系统内没有该设备，请检查输入是否正确"
+                })
             if device_form.is_valid():
                 device_form.save()
                 imei, dev_id = one_net_register(request.POST.get('imei'))
@@ -99,6 +255,11 @@ class DeviceAddView(LoginRequiredMixin, View):
                     return JsonResponse({"status": "success"})
                 return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
             print(device_form.errors)
+        except DevicesRegister.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "errors": "系统内没有该设备，请检查输入是否正确"
+            })
         except Exception as e:
             return JsonResponse({
                 "status": "fail",
@@ -106,7 +267,7 @@ class DeviceAddView(LoginRequiredMixin, View):
             })
         return JsonResponse({
             "status": "fail",
-            "errors": "设备IMEI号和昵称唯一且必填"
+            "errors": "设备序列号和名称唯一且必填"
         })
 
 
@@ -175,10 +336,12 @@ class DeviceModifyView(LoginRequiredMixin, View):
                     msg = '修改频率为 %s 发送成功' % freq
                     create_history_record(request.user, msg)
                     # 如果成功再连续发4次
-                    for _ in range(4):
-                        sleep(0.4)
+
+                    for _ in range(10):
                         res = send_freq(dev_id, freq)
                         print(datetime.now(), res.json())
+                        sleep(0.3)
+
                 elif errno == 10:
                     msg = '修改频率为 %s，当前设备不在线' % freq
                     create_history_record(request.user, msg)
@@ -890,6 +1053,19 @@ class DeviceInfoApiView(APIView):
                 request.data['company'] = company_id
                 device_ser = DevicesInfoSerializer(data=request.data)
                 imei = request.data.get('imei')
+                device_register = DevicesRegister.objects.get(
+                    Q(device_code=imei) | Q(device_imei=imei))
+                if device_register:
+                    if not device_register.company.id == company_id:
+                        return JsonResponse({
+                            "status": "fail",
+                            "errors": "该设备没有激活，请联系客服"
+                        })
+                else:
+                    return JsonResponse({
+                        "status": "fail",
+                        "errors": "系统内没有该设备，请检查输入是否正确"
+                    })
                 if device_ser.is_valid():
                     device_ser.save()
                     imei, dev_id = one_net_register(imei)
@@ -937,6 +1113,11 @@ class DeviceInfoApiView(APIView):
                     "error_no": -2,
                     "info": "没有这个用户"
                 })
+        except DevicesRegister.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "errors": "系统内没有该设备，请检查输入是否正确"
+            })
         except DevicesInfo.DoesNotExist:
             return JsonResponse({
                 "error_no": -2,
@@ -1001,10 +1182,10 @@ class DeviceInfoApiView(APIView):
                 msg = '修改频率为 %s 发送成功' % freq
                 create_history_record(username, msg)
                 # 如果成功再连续发4次
-                for _ in range(4):
-                    sleep(0.4)
+                for _ in range(10):
                     res = send_freq(dev_id, freq)
                     print(datetime.now(), res.json())
+                    sleep(0.3)
             elif errno == 10:
                 msg = '修改频率为 %s，当前设备不在线' % freq
                 create_history_record(username, msg)

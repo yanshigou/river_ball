@@ -2,7 +2,21 @@
 from django.db import models
 from users.models import CompanyModel
 
-# Create your models here.
+
+class DevicesRegister(models.Model):
+    device_imei = models.CharField(max_length=20, verbose_name='序列号', unique=True)
+    device_code = models.CharField(max_length=20, verbose_name='设备编码', unique=True, null=True, blank=True)
+    company = models.ForeignKey(CompanyModel, verbose_name='所属公司', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "设备注册表"
+        verbose_name_plural = verbose_name
+
+
+class DeviceExcelInfo(models.Model):
+    excelInfo = models.CharField(max_length=30, verbose_name='文件备注')
+    excelFile = models.FileField(upload_to='device_excel/%Y/%m', verbose_name='Excel文件名')
+    upload_time = models.DateTimeField(auto_now_add=True, verbose_name='上传时间')
 
 
 class DevicesInfo(models.Model):
@@ -15,6 +29,8 @@ class DevicesInfo(models.Model):
 
     class Meta:
         unique_together = ('imei', 'desc')
+        verbose_name = "设备表"
+        verbose_name_plural = verbose_name
 
 
 class DeviceSettingsInfo(models.Model):

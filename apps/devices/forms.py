@@ -22,3 +22,8 @@ class DeviceActiveForm(forms.ModelForm):
     class Meta:
         model = DevicesInfo
         fields = ["is_active"]
+
+
+class DeviceExcelForm(forms.Form):
+    excelInfo = forms.CharField(label='文件备注', min_length=1)
+    excelFile = forms.FileField(label='上传Excel文件')
