@@ -1,10 +1,10 @@
 {% extends 'blank.html' %}
 {% load staticfiles %}
 {% block title %}
-    流速球速度折线图
+    流速走势图
 {% endblock %}
 {% block topbar_title %}
-    流速球速度折线图：{{ imei }}
+    流速走势图：{{ imei }}
 {% endblock %}
 {% block other_css %}
     <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
@@ -86,13 +86,13 @@
                     color: ['#3398DB'],
                     title:
                         {
-                            text: '流速球速度折线图'
+                            text: ''
                         }
                     ,
                     tooltip: {}
                     ,
                     legend: {
-                        data: ['速度 m/s'],
+                        data: ['流速 m/s'],
 
                     }
                     ,
@@ -138,7 +138,7 @@
                     ],
                     series: [
                         {
-                            name: '速度 m/s',
+                            name: '流速 m/s',
                             type: 'line',
                             data: {{ speed_list|safe }},
                             itemStyle: {

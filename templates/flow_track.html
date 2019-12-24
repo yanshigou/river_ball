@@ -62,7 +62,7 @@
         // 创建一个自定义内容的 infowindow 实例
         //console.log(time);
         //console.log(speed);
-        var infoWindowContent = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lng.slice(0,12) + ", " + lat.slice(0,11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>速度：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
+        var infoWindowContent = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lng.slice(0,12) + ", " + lat.slice(0,11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>流速：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
         var infoWindow = new AMap.InfoWindow({
             position: [lng, lat],
             offset: new AMap.Pixel(0, 0),
@@ -231,9 +231,9 @@
         var speed = $("#speed").val();
         var c_info = $("#info");
         c_info.html("");
-        total_nums = AMap.GeometryUtil.distanceOfLine(data[0].path);
+        //total_nums = AMap.GeometryUtil.distanceOfLine(data[0].path);
         //console.log(total_nums);
-        c_info.html("高德地图计算出所有点坐标路径长度为：" + String(total_nums) + " （米） <br><br>");
+        //c_info.html("高德地图计算出所有点坐标路径长度为：" + String(total_nums) + " （米） <br><br>");
         if (gsmj.length > 0 && speed.length > 0 && zhfbxs.length > 0) {
             zhfbxs = Number(zhfbxs);
             gsmj = Number(gsmj);

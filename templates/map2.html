@@ -29,8 +29,8 @@
             word-wrap: break-word;
             background-color: #fff;
             background-clip: border-box;
-            width: 200px;
-            height: 50px;
+            width: 160px;
+            height: 62px;
             border-width: 0;
             border-radius: 0.4rem;
             box-shadow: 0 2px 6px 0 rgba(114, 124, 245, .5);
@@ -72,11 +72,12 @@
     var markers = []; //province见Demo引用的JS文件
     var host = location.host;
     //console.log(host);
+    var infoWindow = new AMap.InfoWindow({offset: new AMap.Pixel(0, -30)});
     for (var i = 0; i < provinces.length; i += 1) {
         var marker;
         var device_id = provinces[i].device_id;
         //var title = "设备名称：" + provinces[i].desc + "，" + "设备序列号：" + provinces[i].imei + "<br><br>" + "速度：" + provinces[i].speed + "，" + "时间：" + provinces[i].time;
-        var title = "名称：" + provinces[i].desc + "（"  + provinces[i].imei + "）<br>" + "速度：" + provinces[i].speed + " m/s <br>时间：" + provinces[i].time;
+        var title = "&nbsp;" + provinces[i].desc + "<br>" + "&nbsp;" + provinces[i].imei + "<br>" + "&nbsp;" + provinces[i].speed + " m/s <br>&nbsp;" + provinces[i].time;
         var src = '/dataInfo/locationInfo/' + device_id + '/';
         var icon;
         if (provinces[i].type === 1) {
@@ -94,7 +95,7 @@
             });
 
         } else {
-            title = "名称：" + provinces[i].desc + "（"  + provinces[i].imei + "）<br>" + "速度：" + provinces[i].speed + "<br>时间：" + provinces[i].time;
+            title = "&nbsp;" + provinces[i].desc + "<br>" + "&nbsp;" + provinces[i].imei + "<br>" + "&nbsp;" + provinces[i].speed + "<br>&nbsp;" + provinces[i].time;
             icon = new AMap.Icon({
                 image: 'http://' + host + '/media/image/red_point.png',
                 size: new AMap.Size(32, 32)
@@ -109,21 +110,32 @@
             });
 
         }
-        var content = "<div class='input-card content-window-card'><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
-        guzhang = new AMap.Marker({
-            content: content,
-            position: [provinces[i].longitude, provinces[i].latitude],
-            title: provinces[i].name,
-            offset: new AMap.Pixel(-90, -65),   // 设置测站点名字与图片相对位置
-            map: map
-        });
+        //var content = "<div class='input-card content-window-card'><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
+        var content = "<div ><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
+        //guzhang = new AMap.Marker({
+        //    content: content,
+        //    position: [provinces[i].longitude, provinces[i].latitude],
+        //    title: provinces[i].name,
+        //    offset: new AMap.Pixel(-70, -75),   // 设置测站点名字与图片相对位置
+        //    map: map
+        //});
         markers.push(marker);
-        markers.push(guzhang);
+        //markers.push(guzhang);
+        marker.content = content;
+        marker.on('click', markerClick);
+        marker.emit('click', {target: marker});
     }
+
+    function markerClick(e) {
+        infoWindow.setContent(e.target.content);
+        infoWindow.open(map, e.target.getPosition());
+    }
+
     map.setFitView();
 </script>
 <script>
     var url = window.location.pathname;
+
     function shuaxin() {
         $.ajax({
             method: 'POST',
@@ -151,7 +163,7 @@
                     src = '/dataInfo/locationInfo/' + device_id + '/';
                     content = "<div class='input-card content-window-card'><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
                     if (provinces[i].type === 1) {
-                        title = "名称：" + provinces[i].desc + "（"  + provinces[i].imei + "）<br>" + "速度：" + provinces[i].speed + " m/s <br>时间：" + provinces[i].time;
+                        title = "&nbsp;" + provinces[i].desc + "<br>" + "&nbsp;" + provinces[i].imei + "<br>" + "&nbsp;" + provinces[i].speed + " m/s <br>&nbsp;" + provinces[i].time;
                         icon = new AMap.Icon({
                             image: 'http://' + host + '/media/image/green_point.png',
                             size: new AMap.Size(32, 32),
@@ -166,7 +178,7 @@
                         });
 
                     } else {
-                        title = "名称：" + provinces[i].desc + "（"  + provinces[i].imei + "）<br>" + "速度：" + provinces[i].speed + "<br>时间：" + provinces[i].time;
+                        title = "&nbsp;" + provinces[i].desc + "<br>" + "&nbsp;" + provinces[i].imei + "<br>" + "&nbsp;" + provinces[i].speed + "<br>&nbsp;" + provinces[i].time;
                         icon = new AMap.Icon({
                             image: 'http://' + host + '/media/image/red_point.png',
                             size: new AMap.Size(32, 32)
@@ -181,26 +193,32 @@
                         });
 
                     }
-                    content = "<div class='input-card content-window-card'><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
-                    guzhang = new AMap.Marker({
-                        content: content,
-                        position: [provinces[i].longitude, provinces[i].latitude],
-                        title: provinces[i].name,
-                        offset: new AMap.Pixel(-90, -65),   // 设置测站点名字与图片相对位置
-                        map: map
-                    });
+                    //content = "<div class='input-card content-window-card'><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
+                    content = "<div ><a onclick=\"javascript:top.location.href='" + src + "'\">" + title + "</a></div>";
+                    //guzhang = new AMap.Marker({
+                    //    content: content,
+                    //    position: [provinces[i].longitude, provinces[i].latitude],
+                    //    title: provinces[i].name,
+                    //    offset: new AMap.Pixel(-70, -75),   // 设置测站点名字与图片相对位置
+                    //    map: map
+                    //});
                     markers.push(marker);
-                    markers.push(guzhang);
+                    //markers.push(guzhang);
+                    marker.content = content;
+                    marker.on('click', markerClick);
+                    //marker.emit('click', {target: marker});
                 }
 
             }
         })
     }
+
     // 清楚定位点和信息框
-    function removeMarkers(){
+    function removeMarkers() {
         map.remove(markers);
     }
-    /*每10秒刷新一次*/
+
+    /*每30秒刷新一次*/
     setInterval(function () {
             removeMarkers();
             shuaxin();

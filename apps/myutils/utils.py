@@ -230,7 +230,7 @@ def one_net_register(imei):
 def export_excel(location_infos, sheet_info, filename):
     print('utils excel')
 
-    title = ['设备序列号', '采集时间', '经度', '纬度', '方向', '速度 m/s', '海拔/米', '测量精度', '当前电压(V)', '卫星数量']
+    title = ['设备序列号', '采集时间', '经度', '纬度', '方向', '流速 m/s', '海拔 m', '水平精度因子', '当前电压(V)', '卫星数量']
 
     f = xlsxwriter.Workbook(filename)
     fsheet = f.add_worksheet(sheet_info)

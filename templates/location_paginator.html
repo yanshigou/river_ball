@@ -2,10 +2,10 @@
 {% load  staticfiles %}
 
 {% block title %}
-    流速球数据信息
+    测流数据信息
 {% endblock %}
 {% block topbar_title %}
-    流速球数据信息
+    测流数据信息
 {% endblock %}
 {% block other_css %}
     <!-- Custom styles for this page -->
@@ -60,7 +60,7 @@
                 &nbsp;至 &nbsp;
                 <input type="text" class="" id="date_time1" name="end_time" value="{{ end_time }}">
                 &nbsp;
-                首尾流速限值：
+                起始流速限值：
                 <input type="text" class="" id="invalid_speed" value="0.5">
             </p>
             <input type="hidden" value="{{ imei_id }}" name="imei_id" id="imei_id">
@@ -110,7 +110,7 @@
                                 <th>经纬度</th>
                                 <th>流速 m/s</th>
                                 <th>方向</th>
-                                <th>测量精度</th>
+                                <th>水平精度因子</th>
                                 <th>海拔 /米</th>
                                 <th>当前电压(V)</th>
                                 <th>卫星数量</th>
