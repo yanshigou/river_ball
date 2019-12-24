@@ -1056,9 +1056,9 @@ class ExportLocationInfoView(View):
                     stime = datetime.strftime(datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S'), '%m%d%H%M')
                     etime = datetime.strftime(datetime.strptime(end_time, '%Y-%m-%d %H:%M:%S'), '%m%d%H%M')
                     filename = 'media/excel/' + imei + '_' + stime + '_' + etime + '.xlsx'
-                    file = '流速球数据' + stime + '.xlsx'
-                    export_excel(location_datas, '流速球数据', filename)
-                    create_history_record(request.user, '流速球数据导出Excel：%s' % file)
+                    file = '测流数据' + stime + '.xlsx'
+                    export_excel(location_datas, '测流数据', filename)
+                    create_history_record(request.user, '测流数据导出Excel：%s' % file)
                     return JsonResponse({
                         "status": "success",
                         "media_url": "/" + filename,
@@ -1115,7 +1115,7 @@ class OneNetDataView(APIView):
             value = current_data.get('value')
             up_time = current_data.get('at')
             if ds_id == 'liusuqiu':
-                re_data_list = re.findall(r"\$GNRMC[^#]*##\$GNGGA[^#]*##[^#]*##", value, re.S)
+                re_data_list = re.findall(r"\$G[N,P]RMC[^#]*##\$G[N,P]GGA[^#]*##[^#]*##", value, re.S)
                 # print('re_data_list', re_data_list)
                 if re_data_list:
                     for v in re_data_list:
@@ -1130,7 +1130,7 @@ class OneNetDataView(APIView):
                         power = ""
                         for d in data_list:
                             d_list = d.split(',')
-                            if len(d) > 10 and d_list[0] == '$GNRMC':
+                            if len(d) > 10 and (d_list[0] == '$GNRMC' or d_list[0] == '$GPRMC'):
                                 # print('$GNRMC', d_list)
                                 time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
                                 longitude = d_list[5]
@@ -1139,7 +1139,7 @@ class OneNetDataView(APIView):
                                 direction = d_list[8]
                                 EW_hemisphere = d_list[6]
                                 NS_hemisphere = d_list[4]
-                            elif len(d) > 10 and d_list[0] == '$GNGGA':
+                            elif len(d) > 10 and (d_list[0] == '$GNGGA' or d_list[0] == '$GPGGA'):
                                 # print('$GNGGA', d_list)
                                 satellites = d_list[7]
                                 accuracy = d_list[8]
@@ -1792,7 +1792,7 @@ class AppTestRecordSpeedListApiView(APIView):
                         ii = ii + 1
                     cc = cc + 1
                 sendlist.append(sendrec)
-            create_history_record(username, '查询测量记录 %s 速度详情' % test_record.remarks)
+            create_history_record(username, '查询测量记录 %s 流速详情' % test_record.remarks)
             return JsonResponse({
                 "error_no": 0,
                 "all_test_record": sendlist,
