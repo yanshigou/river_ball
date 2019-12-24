@@ -1,0 +1,40 @@
+{% extends 'blank.html' %}
+{% block title %}
+    导入\激活
+{% endblock %}
+{% block topbar_title %}
+导入\激活
+{% endblock %}
+
+{% block page_content %}
+    <div class="container-fluid">
+        <!-- Page Heading -->
+        <p>
+
+        </p>
+        <h3>
+            <small>导入\激活</small>
+        </h3>
+
+        <form method="post" enctype="multipart/form-data" action="{% url 'device_add_excel' %}">
+            <p>请上传固定格式的Excel文件，模板请点击<a href="/media/zhucemuban.xlsx">下载模板</a></p>
+
+            <p>
+                {{ excel_form.as_p }}
+            </p>
+            <p>
+                <input type="submit" value="确认上传">
+            </p>
+            {% csrf_token %}
+        </form>
+    </div>
+{% endblock %}
+
+{% block other_js %}
+    <script>
+        var count1 = {{ ok_count }}, count2 = {{ fail_count }};
+        if (count1 !== undefined && count2 !== undefined){
+            alert('成功：'+count1+"条\n"+"失败："+count2+'条')
+        }
+    </script>
+{% endblock %}

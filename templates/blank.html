@@ -175,11 +175,19 @@
             </li>
         {% endif %}
         {% if request.user.permission == "superadmin" %}
+            <hr class="sidebar-divider d-none d-md-block">
             <li {% if 'users/companyInfo' in request.path or "users/addCompany" in request.path or "users/companyDel" in request.path %}class="nav-item active table-active"
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'company_info' %}">
                     <i class="fas fa-fw fa-house-damage"></i>
                     <span style="font-size: 15px">公司管理</span></a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <li {% if 'devices/allDevices' in request.path  %}class="nav-item active table-active"
+                {% else %}class="nav-item"{% endif %}>
+                <a class="nav-link" href="{% url 'all_devices' %}">
+                    <i class="fas fa-fw fa-baseball-ball"></i>
+                    <span style="font-size: 15px">内部设备管理</span></a>
             </li>
         {% endif %}
 
