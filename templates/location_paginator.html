@@ -88,7 +88,9 @@
             <!-- DataTales Example -->
             <p style="color: black;">
                 总漂浮历时：<a id="first_time"></a><a id="zhi"></a><a id="last_time"></a> <br id="br">
-                总漂浮距离：<strong><a id="total_nums" style="font-size: 22px"></a> m， ( <a id="total_nums2" style="font-size: 22px"></a> km )</strong> <br>
+                总漂浮距离：<strong><a id="total_nums" style="font-size: 22px"></a> m， ( <a id="total_nums2"
+                                                                                      style="font-size: 22px"></a> km )</strong>
+                <br>
                 平均流速： <strong><a id="average_speed" style="font-size: 22px"></a> m/s </strong><br>
             </p>
             <p style="display: none;color: black;" id="max_list">
@@ -212,7 +214,7 @@
                                 {#var max_speed_map = $('#max_speed_map');#}
                                 {#max_speed_map.show();#}
                                 {#console.log(value.max_speed_lon, value.max_speed_lat);#}
-                                url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat;
+                                url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat + "&speed=" + value.max_speed + "&time=" + value.max_speed_time;
                                 {#console.log(url);#}
                             }
                             p_max_list.append('瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：<strong><a style="font-size: 22px">' + value.max_speed + ' m/s </a></strong>&nbsp;');
@@ -340,7 +342,7 @@
             url += $('#date_time1').val();
             //console.log(url);
             div_content.html("");
-            div_content.append("<div id=\"container\"><iframe src=\"" + url +"\" width=\"100%\" height=\"750px\" frameborder=\"0\"  style=\"font-size:14px\">\n" +
+            div_content.append("<div id=\"container\"><iframe src=\"" + url + "\" width=\"100%\" height=\"750px\" frameborder=\"0\"  style=\"font-size:14px\">\n" +
                 "                 </iframe></div>");
         }
     </script>
