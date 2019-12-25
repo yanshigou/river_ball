@@ -335,12 +335,12 @@ class DeviceModifyView(LoginRequiredMixin, View):
                 if errno == 0:
                     msg = '修改频率为 %s 发送成功' % freq
                     create_history_record(request.user, msg)
-                    # 如果成功再连续发4次
-
-                    for _ in range(10):
-                        res = send_freq(dev_id, freq)
-                        print(datetime.now(), res.json())
-                        sleep(0.3)
+                    # # 如果成功再连续发4次
+                    #
+                    # for _ in range(10):
+                    #     res = send_freq(dev_id, freq)
+                    #     print(datetime.now(), res.json())
+                    #     sleep(0.3)
 
                 elif errno == 10:
                     msg = '修改频率为 %s，当前设备不在线' % freq
@@ -1181,11 +1181,11 @@ class DeviceInfoApiView(APIView):
             if errno == 0:
                 msg = '修改频率为 %s 发送成功' % freq
                 create_history_record(username, msg)
-                # 如果成功再连续发4次
-                for _ in range(10):
-                    res = send_freq(dev_id, freq)
-                    print(datetime.now(), res.json())
-                    sleep(0.3)
+                # # 如果成功再连续发4次
+                # for _ in range(10):
+                #     res = send_freq(dev_id, freq)
+                #     print(datetime.now(), res.json())
+                #     sleep(0.3)
             elif errno == 10:
                 msg = '修改频率为 %s，当前设备不在线' % freq
                 create_history_record(username, msg)
