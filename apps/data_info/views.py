@@ -23,8 +23,42 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
         print(permission)
+        data_list = list()
         if permission == 'superadmin':
             all_devices = DevicesInfo.objects.all()
+            for device in all_devices:
+                imei = device.imei
+                location_info = LocationInfo.objects.filter(imei__imei=imei).last()
+                status = "离线"
+                if location_info:
+                    data_power = location_info.power
+                    time = location_info.time
+                    if time:
+                        now_time = datetime.now()
+                        if not (now_time + timedelta(minutes=-1) > (time + timedelta(hours=8))):
+                            status = "在线"
+                    if data_power and len(data_power) > 4:
+                        data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
+                    elif data_power == "CHG":
+                        data_power = "充电中"
+                    elif data_power == "FUL":
+                        data_power = "充电已满"
+                    data_list.append({
+                        "id": device.id,
+                        "imei": imei,
+                        "desc": device.desc,
+                        "is_online": status,
+                        "power": data_power
+                    })
+                else:
+                    data_list.append({
+                        "id": device.id,
+                        "imei": imei,
+                        "desc": device.desc,
+                        "is_online": status,
+                        "power": ""
+                    })
+            print(data_list)
         else:
             try:
                 company = request.user.company.company_name
@@ -33,13 +67,48 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
                 print(e)
                 return render(request, 'select_device.html', {
                     "all_devices": "",
+                    "data_list": data_list
                 })
             if company:
                 all_devices = DevicesInfo.objects.filter(company__company_name=company)
             else:
-                all_devices = ""
+                all_devices = DevicesInfo.objects.filter(company__company_name="")
+            for device in all_devices:
+                imei = device.imei
+                location_info = LocationInfo.objects.filter(imei__imei=imei).last()
+                status = "离线"
+                if location_info:
+                    data_power = location_info.power
+                    time = location_info.time
+                    if time:
+                        now_time = datetime.now()
+                        if not (now_time + timedelta(minutes=-1) > (time + timedelta(hours=8))):
+                            status = "在线"
+                    if data_power and len(data_power) > 4:
+                        data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
+                    elif data_power == "CHG":
+                        data_power = "充电中"
+                    elif data_power == "FUL":
+                        data_power = "充电已满"
+                    data_list.append({
+                        "id": device.id,
+                        "imei": imei,
+                        "desc": device.desc,
+                        "is_online": status,
+                        "power": data_power
+                    })
+                else:
+                    data_list.append({
+                        "id": device.id,
+                        "imei": imei,
+                        "desc": device.desc,
+                        "is_online": status,
+                        "power": ""
+                    })
+            print(data_list)
         return render(request, 'select_device.html', {
-            "all_devices": all_devices
+            # "all_devices": all_devices,
+            "data_list": data_list
         })
 
 
