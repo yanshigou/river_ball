@@ -46,7 +46,7 @@
 </head>
 <body>
 <div id="container"></div>
-<script src="https://webapi.amap.com/maps?v=1.4.15&key=5cda232d2d1f782a634096167304eb59"></script>
+<script src="https://webapi.amap.com/maps?v=1.4.15&key=5cda232d2d1f782a634096167304eb59&&plugin=AMap.Scale,AMap.OverView,AMap.ToolBar"></script>
 <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
 <script type="text/javascript">
 
@@ -132,6 +132,10 @@
     }
 
     map.setFitView();
+    if (provinces.length <= 1){
+        console.log(provinces.length);
+        map.setZoom(14);   // 设置地图层级大小
+    }
 </script>
 <script>
     var url = window.location.pathname;
@@ -221,9 +225,46 @@
     /*每30秒刷新一次*/
     setInterval(function () {
             removeMarkers();
+            console.log("刷新");
             shuaxin();
         },
         30000);
+</script>
+<script>
+    var scale = new AMap.Scale({
+        visible: false
+    }),
+    toolBar = new AMap.ToolBar({
+        visible: false
+    }),
+    overView = new AMap.OverView({
+        visible: false
+    });
+    map.addControl(scale);
+    map.addControl(toolBar);
+    map.addControl(overView);
+    scale.show(); // 显示比例尺
+    showToolBar();  // 工具条
+    showToolBarDirection(); //方向盘
+    showToolBarRuler();  // 工具条标尺
+    function showToolBar() {
+        toolBar.show();
+    }
+    function hideToolBar() {
+        toolBar.hide();
+    }
+    function showToolBarDirection() {
+        toolBar.showDirection();
+    }
+    function hideToolBarDirection() {
+        toolBar.hideDirection();
+    }
+    function showToolBarRuler() {
+        toolBar.showRuler();
+    }
+    function hideToolBarRuler() {
+        toolBar.hideRuler();
+    }
 </script>
 </body>
 </html>

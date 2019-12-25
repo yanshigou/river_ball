@@ -183,7 +183,7 @@
                     <span style="font-size: 15px">公司管理</span></a>
             </li>
             <hr class="sidebar-divider d-none d-md-block">
-            <li {% if 'devices/allDevices' in request.path  %}class="nav-item active table-active"
+            <li {% if 'devices/allDevices' in request.path or 'devices/deviceRegisterExcel/' in request.path  %}class="nav-item active table-active"
                 {% else %}class="nav-item"{% endif %}>
                 <a class="nav-link" href="{% url 'all_devices' %}">
                     <i class="fas fa-fw fa-baseball-ball"></i>

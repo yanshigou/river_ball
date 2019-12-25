@@ -43,6 +43,8 @@
                         <tr>
                             <th>设备序列号</th>
                             <th>设备名称</th>
+                            <th>在线状态</th>
+                            <th>电量</th>
                             <th>操作</th>
                         </tr>
                         </thead>
@@ -53,10 +55,15 @@
 {#                        </tr>#}
 {#                        </tfoot>#}
                         <tbody id="t_body">
-                        {% for device in all_devices %}
+                        {% for device in data_list %}
                             <tr>
                                 <td>{{ device.imei }}</td>
                                 <td>{{ device.desc|default_if_none:"" }}</td>
+                                <td {% if device.is_online == "在线" %}style="color: green" {% else %}style="color: red"
+                                    {% endif %}>
+                                    {% if device.is_online == "在线" %}在线{% else %}离线{% endif %}
+                                </td>
+                                <td>{{ device.power|default_if_none:"" }}</td>
                                 <td>
                                     <a href="{% url 'location_info' device.id %}" style="text-decoration:none">
                                         <button type="button" class="btn btn-success btn-sm" style="line-height: 1">数据查看

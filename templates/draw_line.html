@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" type="text/css">
+    <style>
+        html, body, #container {
+            height: 100%
+        }
+
+        .input-item {
+            height: 2.2rem;
+        }
+
+        .btn {
+            margin: 0 1rem 0 0;
+        }
+
+        .input-text {
+            margin-right: 1rem;
+            font-size: 13px;
+        }
+    </style>
+    <title>鼠标工具绘制</title>
+</head>
+<body>
+<div id='container'></div>
+<div class="input-card" style='width: 24rem;'>
+    <div class="input-item">
+        <input type="radio" name='func' value='polyline'><span class="input-text">画线，右键确定</span>
+    </div>
+    <div class="input-item">
+        <input id="close" type="button" class="btn" value="关闭绘图"/>
+        <input id="is_on" type="button" class="btn" value="判断点线关系"/>
+    </div>
+</div>
+<script src="https://webapi.amap.com/maps?v=1.4.15&key=您申请的key值&plugin=AMap.MouseTool"></script>
+<script type="text/javascript">
+    var map = new AMap.Map('container', {
+        zoom: 14
+    });
+
+    var mouseTool = new AMap.MouseTool(map);
+    //监听draw事件可获取画好的覆盖物
+    var overlays = [];
+    mouseTool.on('draw', function (e) {
+        overlays.push(e.obj);
+    });
+    var path = [];
+    var clickHandler = function (e) {
+        //console.log([e.lnglat.lng, e.lnglat.lat]);
+        path.push([e.lnglat.lng, e.lnglat.lat]);
+        //console.log(path);
+    };
+    // 创建marker
+    var marker = new AMap.Marker({
+        map: map,
+        //draggable: true,
+        position: [106.532287, 29.544574]
+    });
+
+    // 判断点线关系
+    function pointOnSegment() {
+        var pos = marker.getPosition();
+        // mp = getResolution() 获取指定位置的地图分辨率，单位：米/像素
+        var mp = map.getResolution();
+        //console.log(mp);
+        // m 为Polyline宽度的米数
+        var m = 5 * mp;
+        // 判断 marker 是否在线段上，最后一个参数为 m米 的误差
+        var inLine = AMap.GeometryUtil.isPointOnSegment(pos, path[0], path[1], m);
+        var text = '点不在线上';
+        if (inLine) {
+            text = '点在线上';
+        }
+        marker.setLabel({
+            offset: new AMap.Pixel(20, 20),
+            content: text
+        });
+
+    }
+
+    function draw(type) {
+        switch (type) {
+            case 'polyline': {
+                mouseTool.polyline({
+                    strokeColor: '#FF0000',
+                    //同Polyline的Option设置
+                    strokeWeight: 5
+                });
+                break;
+            }
+        }
+    }
+
+    var radios = document.getElementsByName('func');
+    for (var i = 0; i < radios.length; i += 1) {
+        radios[i].onchange = function (e) {
+            map.on('click', clickHandler);    //选中画线后，再开始获取点坐标
+            draw(e.target.value);
+        }
+    }
+    draw('marker');
+
+    //document.getElementById('clear').onclick = function () {
+    //    map.off('click', clickHandler);  // 清除获取点坐标
+    //    map.remove(overlays);
+    //    overlays = [];
+    //};
+    document.getElementById('is_on').onclick = function () {
+        //map.off('click', clickHandler);  // 清除获取点坐标
+        pointOnSegment();
+        console.log(path);
+        path = [];
+        console.log(path);
+    };
+    document.getElementById('close').onclick = function () {
+        map.off('click', clickHandler);  // 清除获取点坐标
+        mouseTool.close(true);  //关闭，并清除覆盖物
+        for (var i = 0; i < radios.length; i += 1) {
+            radios[i].checked = false;
+        }
+    }
+</script>
+</body>
+</html>
