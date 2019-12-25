@@ -8,11 +8,12 @@ from .views import OneNetDataView, AppSelectDevice, AppLocationInfoView, ExportL
     RecordInfoView, AppStartTestRecordView, AppEndTestRecordView, TestRecordDoneView, TestRecordNotDoneView, \
     AppTestRecordSpeedListApiView, AppTestRecordLocationListApiView, RecordLocationPaginatorView, \
     RecordTrackView, RecordStatisticalView, TestRecordDoneDelView, LocationDistanceView, PointMapView, \
-    RecordLocationDistanceView, RecordInfoModifyView, CalculateFlowTrackView
+    RecordLocationDistanceView, RecordInfoModifyView, CalculateFlowTrackView, RecordAddView
 
 urlpatterns = [
     url(r'^deviceDataInfo/$', DeviceDataInfoView.as_view(), name='select_device'),
     url(r'^recordInfo/$', RecordInfoView.as_view(), name='select2_device'),
+    url(r'^recordAdd/$', RecordAddView.as_view(), name='record_add'),
     url(r'^appSelectDevice/$', AppSelectDevice.as_view()),
     url(r'^locationInfo/(?P<imei_id>\d+)/$', LocationPaginatorInfoView.as_view(), name='location_info'),
     url(r'^ExportLocationInfo/$', ExportLocationInfoView.as_view(), name='export_location_info'),

@@ -1,0 +1,151 @@
+{% extends 'blank.html' %}
+{% load  staticfiles %}
+
+{% block title %}
+新增记录
+{% endblock %}
+{% block topbar_title %}
+新增记录
+{% endblock %}
+
+{% block other_css %}
+<link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
+<link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block head_scripts %}
+<script src="{% static 'polyfill.js' %}"></script>
+<script src="{% static 'cascader.js' %}"></script>
+<script src="{% static 'china-area.js' %}"></script>
+{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid" style="font-size:14px">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'select2_device' %}">测量记录</a></li>
+        <li class="breadcrumb-item active">新增记录</li>
+    </ol>
+    <!-- Page Heading -->
+{#    <h2>#}
+{#        <small>新增</small>#}
+{#    </h2>#}
+    <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
+
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">测量备注</label>
+            <div class="col-md-5 col-sm-5 col-xs-12">
+                <input type="text" class="form-control" name="remarks" value="">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">测量设备 *</label>
+            <div class="col-md-5 col-sm-6 col-xs-12">
+                <select name="devices_id" class="form-control col-md-7 col-xs-12 address selectpicker" multiple>
+                    {% for d in all_device %}
+                        <option value="{{ d.id }}" >{{ d.imei }}：{{ d.desc }}</option>
+                    {% endfor %}
+                </select>
+                </div>
+        </div>
+
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">开始时间 *</label>
+            <div class="col-md-5 col-sm-5 col-xs-12">
+                <input type="text" class="form-control" name="start_time" id="date_time0" value="">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">结束时间 *</label>
+            <div class="col-md-5 col-sm-5 col-xs-12">
+                <input type="text" class="form-control" name="end_time" id="date_time1" value="{{ now_time }}">
+            </div>
+        </div>
+        {% if request.user.permission == "superadmin" %}
+        <div class="form-group">
+            <label class="control-label col-md-3 col-sm-3 col-xs-12">所属公司 *</label>
+            <div class="col-md-6 col-sm-6 col-xs-12">
+                <select name="company" class="form-control col-md-7 col-xs-12">
+                    {% for c in company_id %}
+                    <option value="{{ c.id }}">{{ c.company_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% else %}
+        <input type="hidden" value="{{ company_id }}" name="company">
+        {% endif %}
+
+        <div class="ln_solid"></div>
+        <div class="form-group">
+            <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                <button type="button" id="device_info_button" class="btn btn-primary">确定</button>
+            </div>
+        </div>
+        {% csrf_token %}
+    </form>
+</div>
+{% endblock %}
+
+{% block other_js %}
+<script src="{% static 'js/jquery-editable-select.js' %}"></script>
+<script src="{% static 'laydate/laydate.js' %}"></script>
+<script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+<script>
+    $('#basic').editableSelect({
+        filter: false
+    });
+</script>
+    <script>
+        //执行一个laydate实例
+        laydate.render({
+            elem: '#date_time0',
+            type: 'datetime'
+        });
+        laydate.render({
+            elem: '#date_time1',
+            type: 'datetime'
+        });
+    </script>
+<script>
+    $('#device_info_button').on('click', function () {
+        $.ajax({
+            cache: false,
+            type: 'post',
+            dataType: 'json',
+            url: "{% url 'record_add' %}",
+            data: $("#device_info_form").serialize(),
+            async: true,
+            success: function (data) {
+                if (data.status === "success") {
+                    alert('添加成功');
+                    window.location.replace("{% url 'select2_device' %}")
+                } else {
+                    var msg = "";
+                        if (data.errors) {
+                            $.each(data.errors, function (i, value) {
+                                if (i === 'remarks') {
+                                    msg += "测量备注" + value
+                                }else if (i === 'start_time'){
+                                    msg += "开始时间" + value
+                                }else if (i === 'end_time'){
+                                    msg += "结束时间" + value
+                                }else if (i === 'devices_id'){
+                                    msg += "测量设备" + value
+                                }
+                            })
+                        }else{
+                            msg = "修改失败"
+                        }
+                        if (data.msg){
+                            alert(data.msg)
+                        }else{
+                            alert(msg);
+                        }
+                }
+            }
+        })
+    })
+</script>
+{% endblock %}

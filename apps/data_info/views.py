@@ -5,7 +5,7 @@ from myutils.mixin_utils import LoginRequiredMixin
 from datetime import timedelta
 from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active
 from .models import LocationInfo, DevicesOneNetInfo, TestRecord
-from users.models import UserProfile
+from users.models import UserProfile, CompanyModel
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
 from .forms import LocationInfoSerializer, DevicesInfoSerializer, TestRecordForm
@@ -84,6 +84,44 @@ class RecordInfoView(LoginRequiredMixin, View):
             "all_test_record": all_test_record,
             "start_time": start_time,
             "end_time": now_time
+        })
+
+
+class RecordAddView(LoginRequiredMixin, View):
+    def get(self, request):
+        permission = request.user.permission
+        now_time = datetime.now()
+        print(permission)
+        if permission == 'superadmin':
+            company_id = CompanyModel.objects.all()
+            all_device = DevicesInfo.objects.all()
+            return render(request, 'record_form_add.html', {"company_id": company_id, "now_time": now_time, "all_device": all_device})
+        else:
+            try:
+                company_id = request.user.company.id
+                all_device = DevicesInfo.objects.filter(company_id=company_id)
+            except Exception as e:
+                print(e)
+                return HttpResponseRedirect(reverse('select2_device'))
+        return render(request, 'record_form_add.html', {"company_id": company_id, "now_time": now_time, "all_device": all_device})
+
+    def post(self, request):
+        # print(request.POST)
+        record_form = TestRecordForm(request.POST)
+        try:
+            if record_form.is_valid():
+                record_form.save()
+                return JsonResponse({"status": "success"})
+            errors = dict(record_form.errors.items())
+            print(errors)
+        except Exception as e:
+            return JsonResponse({
+                "status": "fail",
+                "errors": "出现未知错误请联系管理员" + str(e)
+            })
+        return JsonResponse({
+            "status": "fail",
+            "errors": errors
         })
 
 
