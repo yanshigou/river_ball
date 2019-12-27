@@ -2,113 +2,124 @@
 {% load  staticfiles %}
 
 {% block title %}
-设备修改
+    设备修改
 {% endblock %}
 {% block topbar_title %}
-设备修改
+    设备修改
 {% endblock %}
 {% block other_css %}
-<link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
-<link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
-<style>
-    option:nth-child(1) {
-        display: none;
-    }
-</style>
+    <link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <style>
+        option:nth-child(1) {
+            display: none;
+        }
+    </style>
 {% endblock %}
 
 {% block head_scripts %}
-<script src="{% static 'polyfill.js' %}"></script>
-<script src="{% static 'cascader.js' %}"></script>
-<script src="{% static 'china-area.js' %}"></script>
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
 {% endblock %}
 
 {% block page_content %}
-<div class="container-fluid" style="font-size:14px">
+    <div class="container-fluid" style="font-size:14px">
 
-    <!-- Page Heading -->
+        <!-- Page Heading -->
 
-{#    <h2>#}
-{#        <small>修改</small>#}
-{#    </h2>#}
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'devices_info' %}">设备管理</a></li>
-        <li class="breadcrumb-item active">修改设备</li>
-    </ol>
-    <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
+        {#    <h2>#}
+        {#        <small>修改</small>#}
+        {#    </h2>#}
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'devices_info' %}">设备管理</a></li>
+            <li class="breadcrumb-item active">修改设备</li>
+        </ol>
+        <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">设备序列号 *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" readonly class="form-control" name="imei" value="{{ device_info.imei }}">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">设备序列号 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" readonly class="form-control" name="imei" value="{{ device_info.imei }}">
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">设备名称 *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" class="form-control" name="desc" value="{{ device_info.desc|default_if_none:"" }}">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">设备名称 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="desc"
+                           value="{{ device_info.desc|default_if_none:"" }}">
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">上传频率（s） *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" class="form-control" name="freq" value="{{ device_info.freq }}">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">上报频率（s） *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="freq" value="{{ device_info.freq }}"
+                           placeholder="请输入1-60之间的整数" id="freq" onkeyup="this.value=this.value.replace(/[^\d]/g,'')">
+                </div>
             </div>
-        </div>
 
-        <input type="hidden" value="{{ device_info.company.id }}" name="company">
-        <div class="ln_solid"></div>
-        <div class="form-group">
-            <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
-                <button type="button" id="device_info_button" class="btn btn-primary">确认修改</button>
+            <input type="hidden" value="{{ device_info.company.id }}" name="company">
+            <div class="ln_solid"></div>
+            <div class="form-group">
+                <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                    <button type="button" id="device_info_button" class="btn btn-primary">确认修改</button>
+                </div>
             </div>
-        </div>
-        {% csrf_token %}
-    </form>
-</div>
+            {% csrf_token %}
+        </form>
+    </div>
 {% endblock %}
 
 {% block other_js %}
-<script src="{% static 'laydate/laydate.js' %}"></script>
-<script src="{% static 'js/bootstrap-select.min.js' %}"></script>
-<script>
-    $('#device_info_button').on('click', function () {
-        $.ajax({
-            cache: false,
-            type: 'post',
-            dataType: 'json',
-            url: "{% url 'device_modify' device_info.id %}",
-            data: $("#device_info_form").serialize(),
-            async: true,
-            success: function (data) {
-                if (data.status === "success") {
-                    alert('修改信息成功，' + data.msg);
-                    window.location.href = "{% url 'devices_info' %}"
-                } else {
-                    var msg = "";
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script>
+        $('#device_info_button').on('click', function () {
+            var freq = $('#freq');
+            var re = /^(?:[1-5]?\d|60)$/;
+            if (re.test(freq.val())) {
+                console.log(freq.val())
+            } else {
+                freq.val("");
+                alert('请输入1-60之间的整数');
+                return
+            }
+            $.ajax({
+                cache: false,
+                type: 'post',
+                dataType: 'json',
+                url: "{% url 'device_modify' device_info.id %}",
+                data: $("#device_info_form").serialize(),
+                async: true,
+                success: function (data) {
+                    if (data.status === "success") {
+                        alert('修改信息成功，' + data.msg);
+                        window.location.href = "{% url 'devices_info' %}"
+                    } else {
+                        var msg = "";
                         if (data.errors) {
                             $.each(data.errors, function (i, value) {
                                 if (i === 'freq') {
-                                    msg += "上传频率" + value
-                                }else if (i === 'desc'){
+                                    msg += "上报频率（s）" + value
+                                } else if (i === 'desc') {
                                     msg += "设备名称" + value
                                 }
                             })
-                        }else{
+                        } else {
                             msg = "修改失败"
                         }
-                        if (data.msg){
+                        if (data.msg) {
                             alert(data.msg)
-                        }else{
+                        } else {
                             alert(msg);
                         }
+                    }
                 }
-            }
+            })
         })
-    })
-</script>
+    </script>
 
 {% endblock %}

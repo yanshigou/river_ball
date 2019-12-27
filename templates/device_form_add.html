@@ -2,109 +2,119 @@
 {% load  staticfiles %}
 
 {% block title %}
-设备新增
+    设备新增
 {% endblock %}
 {% block topbar_title %}
-设备新增
+    设备新增
 {% endblock %}
 
 {% block other_css %}
-<link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
-<link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/jquery-editable-select.css' %}">
+    <link href="{% static 'css/bootstrap-select.min.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block head_scripts %}
-<script src="{% static 'polyfill.js' %}"></script>
-<script src="{% static 'cascader.js' %}"></script>
-<script src="{% static 'china-area.js' %}"></script>
+    <script src="{% static 'polyfill.js' %}"></script>
+    <script src="{% static 'cascader.js' %}"></script>
+    <script src="{% static 'china-area.js' %}"></script>
 {% endblock %}
 
 {% block page_content %}
-<div class="container-fluid" style="font-size:14px">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'devices_info' %}">设备管理</a></li>
-        <li class="breadcrumb-item active">新增设备</li>
-    </ol>
-    <!-- Page Heading -->
-{#    <h2>#}
-{#        <small>新增</small>#}
-{#    </h2>#}
-    <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
+    <div class="container-fluid" style="font-size:14px">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">主页</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'devices_info' %}">设备管理</a></li>
+            <li class="breadcrumb-item active">新增设备</li>
+        </ol>
+        <!-- Page Heading -->
+        {#    <h2>#}
+        {#        <small>新增</small>#}
+        {#    </h2>#}
+        <form class="form-horizontal form-label-left form-control-plaintext" id="device_info_form">
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">设备序列号或设备编码 *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" class="form-control" name="imei" value="">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">设备序列号或设备编码 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="imei" value="">
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">设备名称 *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" class="form-control" name="desc" value="">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">设备名称 *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="desc" value="">
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">上传频率（s） *</label>
-            <div class="col-md-5 col-sm-5 col-xs-12">
-                <input type="text" class="form-control" name="freq" value="5">
+            <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">上报频率（s） *</label>
+                <div class="col-md-5 col-sm-5 col-xs-12">
+                    <input type="text" class="form-control" name="freq" value="5"
+                           placeholder="请输入1-60之间的整数" id="freq" onkeyup="this.value=this.value.replace(/[^\d]/g,'')">
+                </div>
             </div>
-        </div>
-        {% if request.user.permission == "superadmin" %}
-        <div class="form-group">
-            <label class="control-label col-md-3 col-sm-3 col-xs-12">所属公司 *</label>
-            <div class="col-md-6 col-sm-6 col-xs-12">
-                <select name="company" class="form-control col-md-7 col-xs-12">
-                    {% for c in company_id %}
-                    <option value="{{ c.id }}">{{ c.company_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        {% else %}
-        <input type="hidden" value="{{ company_id }}" name="company">
-        {% endif %}
+            {% if request.user.permission == "superadmin" %}
+                <div class="form-group">
+                    <label class="control-label col-md-3 col-sm-3 col-xs-12">所属公司 *</label>
+                    <div class="col-md-6 col-sm-6 col-xs-12">
+                        <select name="company" class="form-control col-md-7 col-xs-12">
+                            {% for c in company_id %}
+                                <option value="{{ c.id }}">{{ c.company_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            {% else %}
+                <input type="hidden" value="{{ company_id }}" name="company">
+            {% endif %}
 
-        <div class="ln_solid"></div>
-        <div class="form-group">
-            <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
-                <button type="button" id="device_info_button" class="btn btn-primary">确定</button>
+            <div class="ln_solid"></div>
+            <div class="form-group">
+                <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                    <button type="button" id="device_info_button" class="btn btn-primary">确定</button>
+                </div>
             </div>
-        </div>
-        {% csrf_token %}
-    </form>
-</div>
+            {% csrf_token %}
+        </form>
+    </div>
 {% endblock %}
 
 {% block other_js %}
-<script src="{% static 'js/jquery-editable-select.js' %}"></script>
-<script src="{% static 'laydate/laydate.js' %}"></script>
-<script src="{% static 'js/bootstrap-select.min.js' %}"></script>
-<script>
-    $('#basic').editableSelect({
-        filter: false
-    });
-</script>
-<script>
-    $('#device_info_button').on('click', function () {
-        $.ajax({
-            cache: false,
-            type: 'post',
-            dataType: 'json',
-            url: "{% url 'device_add' %}",
-            data: $("#device_info_form").serialize(),
-            async: true,
-            success: function (data) {
-                if (data.status === "success") {
-                    alert('添加成功');
-                    window.location.replace("{% url 'devices_info' %}")
-                } else {
-                    alert(data.errors)
-                }
+    <script src="{% static 'js/jquery-editable-select.js' %}"></script>
+    <script src="{% static 'laydate/laydate.js' %}"></script>
+    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
+    <script>
+        $('#basic').editableSelect({
+            filter: false
+        });
+    </script>
+    <script>
+        $('#device_info_button').on('click', function () {
+            var freq = $('#freq');
+            var re = /^(?:[1-5]?\d|60)$/;
+            if (re.test(freq.val())) {
+                console.log(freq.val())
+            } else {
+                freq.val("");
+                alert('请输入1-60之间的整数');
+                return
             }
+            $.ajax({
+                cache: false,
+                type: 'post',
+                dataType: 'json',
+                url: "{% url 'device_add' %}",
+                data: $("#device_info_form").serialize(),
+                async: true,
+                success: function (data) {
+                    if (data.status === "success") {
+                        alert('添加成功');
+                        window.location.replace("{% url 'devices_info' %}")
+                    } else {
+                        alert(data.errors)
+                    }
+                }
+            })
         })
-    })
-</script>
+    </script>
 {% endblock %}
