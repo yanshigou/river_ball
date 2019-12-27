@@ -176,7 +176,10 @@ class RecordAddView(LoginRequiredMixin, View):
 
     def post(self, request):
         # print(request.POST)
-        record_form = TestRecordForm(request.POST)
+        request_post = request.POST.copy()
+        devices_id_list = request_post.getlist('devices_id')
+        request_post['devices_id'] = ",".join(devices_id_list)
+        record_form = TestRecordForm(request_post)
         try:
             if record_form.is_valid():
                 record_form.save()
