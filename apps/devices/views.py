@@ -388,7 +388,7 @@ class DeviceDelView(LoginRequiredMixin, View):
         device_id = request.POST.get('device_id', "")
         # print(device_id)
         device = DevicesInfo.objects.filter(id=device_id)
-        infos = LocationInfo.objects.filter(imei_id=device_id)
+        infos = LocationInfo.objects.filter(imei_id=device_id).last()
         # print(infos)
         if infos:
             return JsonResponse({"status": "fail", "msg": "该设备下有数据，禁止删除。"})
@@ -836,7 +836,7 @@ class AppDeviceDelView(View):
             if permission == 'superadmin':
                 device_id = request.POST.get('device_id', "")
                 device = DevicesInfo.objects.filter(id=device_id)
-                infos = LocationInfo.objects.filter(imei_id=device_id)
+                infos = LocationInfo.objects.filter(imei_id=device_id).last()
                 if infos:
                     return JsonResponse({
                         "error_no": 2,
@@ -853,7 +853,7 @@ class AppDeviceDelView(View):
                     company_id = user.company.id
                     device_id = request.POST.get('device_id', "")
                     device = DevicesInfo.objects.get(id=device_id, company_id=company_id)
-                    infos = LocationInfo.objects.filter(imei_id=device_id)
+                    infos = LocationInfo.objects.filter(imei_id=device_id).last()
                     if infos:
                         return JsonResponse({
                             "error_no": 2,
@@ -948,11 +948,11 @@ class DeviceInfoApiView(APIView):
             permission = user.permission
             if permission == 'superadmin':
                 device = DevicesInfo.objects.get(imei=imei)
-                location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+                location = LocationInfo.objects.filter(imei__imei=imei).last()
                 if location:
-                    speed = location[0].speed
-                    time = location[0].time
-                    data_power = location[0].power
+                    speed = location.speed
+                    time = location.time
+                    data_power = location.power
                     if data_power and len(data_power) > 4:
                         data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
                     elif data_power == "CHG":
@@ -993,11 +993,11 @@ class DeviceInfoApiView(APIView):
             else:
                 company_id = user.company_id
                 device = DevicesInfo.objects.get(imei=imei, company_id=company_id)
-                location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
+                location = LocationInfo.objects.filter(imei__imei=imei).last()
                 if location:
-                    speed = location[0].speed
-                    time = location[0].time
-                    data_power = location[0].power
+                    speed = location.speed
+                    time = location.time
+                    data_power = location.power
                     if data_power and len(data_power) > 4:
                         data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
                     elif data_power == "CHG":
