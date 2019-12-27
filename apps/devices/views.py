@@ -683,10 +683,8 @@ class AppLastLocation(APIView):
                 imei_list = [i.imei for i in devices]
             data_list = list()
             for imei in imei_list:
-                location = LocationInfo.objects.filter(imei__imei=imei).order_by('-time')
-                if location:
-                    location = location[0]
-                else:
+                location = LocationInfo.objects.filter(imei__imei=imei).last()
+                if not location:
                     continue
                 longitude = location.longitude
                 latitude = location.latitude
@@ -954,6 +952,13 @@ class DeviceInfoApiView(APIView):
                 if location:
                     speed = location[0].speed
                     time = location[0].time
+                    data_power = location[0].power
+                    if data_power and len(data_power) > 4:
+                        data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
+                    elif data_power == "CHG":
+                        data_power = "充电中"
+                    elif data_power == "FUL":
+                        data_power = "充电已满"
                     if speed:
                         speed = float('%0.2f' % (float(speed) * 0.5144444))
                     if time:
@@ -967,6 +972,7 @@ class DeviceInfoApiView(APIView):
                 else:
                     speed = ""
                     status = "offline"
+                    data_power = ""
 
                 desc = device.desc
                 create_time = device.time
@@ -975,7 +981,8 @@ class DeviceInfoApiView(APIView):
                     "desc": desc,
                     "speed": speed,
                     "status": status,
-                    "create_time": create_time
+                    "create_time": create_time,
+                    "power": data_power
                 }
                 data_list.append(data)
                 create_history_record(username, '查询设备 %s 详情' % imei)
@@ -990,6 +997,13 @@ class DeviceInfoApiView(APIView):
                 if location:
                     speed = location[0].speed
                     time = location[0].time
+                    data_power = location[0].power
+                    if data_power and len(data_power) > 4:
+                        data_power = float('%0.2f' % (float(data_power[3:]) * 0.001))
+                    elif data_power == "CHG":
+                        data_power = "充电中"
+                    elif data_power == "FUL":
+                        data_power = "充电已满"
                     if speed:
                         speed = float('%0.2f' % (float(speed) * 0.5144444))
                     if time:
@@ -1003,6 +1017,7 @@ class DeviceInfoApiView(APIView):
                 else:
                     speed = ""
                     status = "offline"
+                    data_power = ""
 
                 desc = device.desc
                 create_time = device.time
@@ -1011,7 +1026,8 @@ class DeviceInfoApiView(APIView):
                     "desc": desc,
                     "speed": speed,
                     "status": status,
-                    "create_time": create_time
+                    "create_time": create_time,
+                    "power": data_power
                 }
                 data_list.append(data)
                 create_history_record(username, '查询设备 %s 详情' % imei)
@@ -1147,7 +1163,7 @@ class DeviceInfoApiView(APIView):
             if not freq:
                 return JsonResponse({
                     "error_no": -3,
-                    "info": "请正确填写上传频率"
+                    "info": "请正确填写上报频率"
                 })
 
             if permission == "superadmin":
