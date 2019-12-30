@@ -34,12 +34,12 @@
         </ol>
         <!-- Page Heading -->
         <!-- DataTales Example -->
-        <p >测量时间：{{ start_time }} 至 {{ end_time }}</p>
+        <p>测量时间：{{ start_time }} 至 {{ end_time }}</p>
         {% for desc in desc_list %}
-            <p >
+            <p>
             <h6>{{ desc.desc }}:</h6>
             &nbsp;&nbsp;&nbsp;&nbsp;总漂浮历时：<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a>
-            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}" >
+            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}">
             &nbsp;&nbsp;&nbsp;&nbsp;总漂浮距离：<a id="total_nums{{ desc.id }}">0</a> m
             (<a id="total_nums2{{ desc.id }}">0</a> km) <br>
             &nbsp;&nbsp;&nbsp;&nbsp;平均流速： <a id="average_speed{{ desc.id }}">0</a> m/s <br>
@@ -137,12 +137,12 @@
                                         {#var max_speed_map = $('#max_speed_map');#}
                                         {#max_speed_map.show();#}
                                         console.log(value.max_speed_lon, value.max_speed_lat);
-                                        url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat;
+                                        url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat + "&speed=" + value.max_speed + "&time=" + value.max_speed_time;
                                         {#console.log(url);#}
                                     }
-                                    p_max_list.append('瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：' + value.max_speed + ' m/s &nbsp;');
+                                    p_max_list.append('瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：<strong><a style="font-size: 22px">' + value.max_speed + ' m/s </a></strong>&nbsp;');
                                     p_max_list.append('<a href="' +
-                                        url + '" target="view_window">' + "<i class=\"fa fa-map-marker\"></i>" + '</a>' + '<br>');
+                                        url + '" target="view_window" style="font-size: 18px">' + "<i class=\"fa fa-map-marker\">&nbsp;( " + value.max_speed_lon + ", " + value.max_speed_lat + " )</i>" + '</a>' + '<br>');
                                     p_max_list.show();
                                 });
 
