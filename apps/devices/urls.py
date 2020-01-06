@@ -5,11 +5,12 @@ from django.conf.urls import url
 from .views import DevicesInfoView, DeviceAddView, DeviceView, DeviceModifyView, DeviceDelView, ShowMapView, \
     AppLastLocation, test11, AppDeviceAddView, AppCompanyView, AppPermissionView, AppDeviceDelView, \
     DeviceActiveView, AppDeviceActiveView, DeviceInfoApiView, AllDeviceInfoApi, QueryFreqApiView, ShowMap2View, \
-    DevicesRegisterInfoView, DevicesRegisterExcelView
+    DevicesRegisterInfoView, DevicesRegisterExcelView, InitDevicesView
 
 urlpatterns = [
     url(r'^info/$', DevicesInfoView.as_view(), name='devices_info'),
     url(r'^allDevices/$', DevicesRegisterInfoView.as_view(), name='all_devices'),
+    url(r'^initDevices/$', InitDevicesView.as_view(), name='init_devices'),
     url(r'^deviceModify/(?P<device_id>\d+)/$', DeviceModifyView.as_view(), name='device_modify'),
     url(r'^deviceView/(?P<device_id>\d+)/$', DeviceView.as_view(), name='device_view'),
     url(r'^deviceAdd/$', DeviceAddView.as_view(), name='device_add'),

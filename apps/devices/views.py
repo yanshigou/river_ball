@@ -4,7 +4,7 @@ from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, gps_conversion, one_net_register, send_freq
 from .models import DevicesInfo, CompanyModel, DevicesRegister, DeviceExcelInfo
-from data_info.models import LocationInfo, DevicesOneNetInfo
+from data_info.models import LocationInfo, DevicesOneNetInfo, TestRecord
 from .forms import DevicesInfoForm, DeviceActiveForm, DevicesInfoSerializer, DeviceExcelForm
 from django.http import JsonResponse
 from river_ball.settings import MEDIA_ROOT
@@ -134,6 +134,54 @@ class DevicesRegisterInfoView(LoginRequiredMixin, View):
             })
 
 
+class InitDevicesView(LoginRequiredMixin, View):
+    def post(self, request):
+        """
+        初始化设备，清空所有有关数据
+        """
+        permission = request.user.permission
+        print(permission)
+        device_id = request.POST.get('device_id')
+        print(device_id)
+        try:
+            if permission == 'superadmin':
+                device = DevicesRegister.objects.get(id=device_id)
+                device_imei = device.device_imei
+                try:
+                    device_info = DevicesInfo.objects.get(imei=device_imei)
+                    deviceid = device_info.id
+                    LocationInfo.objects.filter(imei_id=deviceid).delete()  # 清空数据表
+                    TestRecord.objects.filter(devices_id__contains=deviceid).delete()  # 清空测试记录
+                    device_info.delete()  # 删除该设备
+                except DevicesInfo.DoesNotExist:
+                    pass
+                except Exception as e:
+                    print(e)
+
+                device.company_id = None
+                device.save()    # 清空绑定的公司
+
+                create_history_record(request.user, '初始化设备 %s' % device_imei)
+                return JsonResponse({
+                    "status": "success"
+                })
+            else:
+                return JsonResponse({
+                    "status": "fail",
+                    "msg": "没有权限！"
+                })
+        except DevicesRegister.DoesNotExist:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "该设备不存在"
+            })
+        except Exception as e:
+            return JsonResponse({
+                "status": "fail",
+                "msg": "出现未知错误请联系管理员" + str(e)
+            })
+
+
 class DevicesRegisterExcelView(LoginRequiredMixin, View):
     """
     导入excel注册设备
@@ -162,7 +210,7 @@ class DevicesRegisterExcelView(LoginRequiredMixin, View):
                     if device_code:
                         device_code = int(device_code)
                     device_imei = int(rows[1])
-                    company_name = rows[2]
+                    company_name = rows[2].strip()
                     device_info = DevicesRegister.objects.filter(Q(device_code=device_code) | Q(device_imei=device_imei))
                     if device_info:
                         device_info = device_info[0]
@@ -170,11 +218,17 @@ class DevicesRegisterExcelView(LoginRequiredMixin, View):
                         device_info = DevicesRegister.objects.create(device_code=device_code, device_imei=device_imei)
                     if company_name:
                         try:
-                            company_id = CompanyModel.objects.get(company_name=company_name)
+                            company_id = CompanyModel.objects.get(company_name=company_name).id
                             device_info.company_id = company_id
                             device_info.save()
-                        except CompanyModel.DoesNotExist:
+                        except CompanyModel.DoesNotExist as e:
+                            print('device register error: ', e)
                             fail_count += 1
+                            continue
+                        except Exception as e:
+                            print('device register Exception: ', e)
+                            fail_count += 1
+                            continue
                         create_history_record(request.user, '批量激活设备 %s' % device_imei)
                     else:
                         create_history_record(request.user, '批量注册设备 %s' % device_imei)
@@ -223,13 +277,14 @@ class DeviceAddView(LoginRequiredMixin, View):
 
     def post(self, request):
         # print(request.POST)
-        device_form = DevicesInfoForm(request.POST)
+        # device_form = DevicesInfoForm(request.POST)
         device_imei = request.POST.get('imei')
         company_id = request.POST.get('company')
         try:
             device_register = DevicesRegister.objects.get(Q(device_code=device_imei) | Q(device_imei=device_imei))
             if device_register:
                 if device_register.company:
+                    device_imei = device_register.device_imei
                     if not str(device_register.company.id) == company_id:
                         return JsonResponse({
                             "status": "fail",
@@ -245,13 +300,16 @@ class DeviceAddView(LoginRequiredMixin, View):
                     "status": "fail",
                     "errors": "系统内没有该设备，请检查输入是否正确"
                 })
+            request_post = request.POST.copy()
+            request_post['imei'] = device_imei
+            device_form = DevicesInfoForm(request_post)
             if device_form.is_valid():
                 device_form.save()
-                imei, dev_id = one_net_register(request.POST.get('imei'))
+                imei, dev_id = one_net_register(device_imei)
                 imei_id = DevicesInfo.objects.get(imei=imei).id
                 if imei and dev_id:
                     DevicesOneNetInfo.objects.create(imei_id=imei_id, dev_id=dev_id)
-                    create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (request.POST.get('imei'), dev_id))
+                    create_history_record(request.user, '新增设备 %s, OneNet ID %s' % (device_imei, dev_id))
                     return JsonResponse({"status": "success"})
                 return JsonResponse({"status": "fail", "errors": "OneNet注册出错, 请删除设备重新注册"})
             print(device_form.errors)
