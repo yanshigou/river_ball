@@ -70,20 +70,49 @@
                             <td>{{ user.company.company_name }}</td>
                             {% endif %}
                             <td>
-                                {% if  request.user.username != user.username and request.user.permission != user.permission %}
-                                {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
-                                <a href="{% url 'change_permission' user.id %}" style="text-decoration:none">
-                                    <button type="button" class="btn btn-warning btn-sm"
-                                        style="line-height: 1">修改</button>
-                                </a>
+                                {% if request.user.permission == "admin" and user.permission != "superadmin" %}
+                                    <a href="{% url 'change_permission' user.id %}" style="text-decoration:none">
+                                        <button type="button" class="btn btn-warning btn-sm"
+                                            style="line-height: 1">修改</button>
+                                    </a>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="return deluser({{ user.id }})" style="line-height: 1">删除
+                                    </button>
+                                        <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
+                                        onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
+                                    </button>
+                                {% elif request.user.permission == "superadmin" and user.permission != "superadmin" %}
+                                    <a href="{% url 'change_permission' user.id %}" style="text-decoration:none">
+                                        <button type="button" class="btn btn-warning btn-sm"
+                                            style="line-height: 1">修改</button>
+                                    </a>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="return deluser({{ user.id }})" style="line-height: 1">删除
+                                    </button>
+                                        <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
+                                        onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
+                                    </button>
+                                {% elif request.user.permission == "superadmin" and user.permission == "superadmin" and request.user.username == "superadmin" and user.username == "superadmin" %}
+                                    <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
+                                        onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
+                                    </button>
+                                {% elif request.user.permission == "superadmin" and user.permission == "superadmin" and user.username != "superadmin" and request.user.username != user.username %}
+                                     <a href="{% url 'change_permission' user.id %}" style="text-decoration:none">
+                                        <button type="button" class="btn btn-warning btn-sm"
+                                            style="line-height: 1">修改</button>
+                                    </a>
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="return deluser({{ user.id }})" style="line-height: 1">删除
+                                    </button>
+                                        <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
+                                        onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
+                                    </button>
+                                {% elif request.user.permission == "superadmin" and user.permission == "superadmin" and request.user.username != "superadmin" and user.username != "superadmin" %}
+                                    <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
+                                        onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
+                                    </button>
                                 {% endif %}
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    onclick="return deluser({{ user.id }})" style="line-height: 1">删除
-                                </button>
-                                <button type="button" class="btn btn-danger btn-sm" style="line-height: 1"
-                                    onclick="return resetuser({{ user.id }}, '{{ user.username }}')">重置密码
-                                </button>
-                                {% endif %}
+
                             </td>
                         </tr>
                         {% endfor %}
