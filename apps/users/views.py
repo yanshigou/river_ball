@@ -12,6 +12,7 @@ from myutils.mixin_utils import LoginRequiredMixin
 from myutils.utils import create_history_record, make_message, jpush_function_extra
 from django.core.urlresolvers import reverse
 from devices.models import DevicesInfo
+from django.db.models import Q
 DEFAULT_PASSWORD = "123456"
 
 
@@ -496,7 +497,7 @@ class CompanyView(LoginRequiredMixin, View):
         print(permission)
         if permission == 'superadmin':
             all_company = CompanyModel.objects.all().order_by('id')
-            all_admin_user = UserProfile.objects.filter(permission='admin')
+            all_admin_user = UserProfile.objects.filter(Q(permission='admin') | Q(permission='superadmin'))
             return render(request, 'company_info.html', {"all_company": all_company, "all_admin_user": all_admin_user})
         else:
             return HttpResponseRedirect(reverse("index"))
