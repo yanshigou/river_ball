@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import timedelta
-from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active
+from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active, geodistance
 from .models import LocationInfo, DevicesOneNetInfo, TestRecord
 from users.models import UserProfile, CompanyModel
 from devices.models import DevicesInfo
@@ -58,7 +58,7 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
                         "is_online": status,
                         "power": ""
                     })
-            print(data_list)
+            # print(data_list)
         else:
             try:
                 company = request.user.company.company_name
@@ -164,7 +164,8 @@ class RecordAddView(LoginRequiredMixin, View):
         if permission == 'superadmin':
             company_id = CompanyModel.objects.all()
             all_device = DevicesInfo.objects.all()
-            return render(request, 'record_form_add.html', {"company_id": company_id, "now_time": now_time, "all_device": all_device})
+            return render(request, 'record_form_add.html',
+                          {"company_id": company_id, "now_time": now_time, "all_device": all_device})
         else:
             try:
                 company_id = request.user.company.id
@@ -172,7 +173,8 @@ class RecordAddView(LoginRequiredMixin, View):
             except Exception as e:
                 print(e)
                 return HttpResponseRedirect(reverse('select2_device'))
-        return render(request, 'record_form_add.html', {"company_id": company_id, "now_time": now_time, "all_device": all_device})
+        return render(request, 'record_form_add.html',
+                      {"company_id": company_id, "now_time": now_time, "all_device": all_device})
 
     def post(self, request):
         # print(request.POST)
@@ -1241,11 +1243,34 @@ class OneNetDataView(APIView):
                         for d in data_list:
                             d_list = d.split(',')
                             if len(d) > 10 and (d_list[0] == '$GNRMC' or d_list[0] == '$GPRMC'):
+                                # TODO 与最后一条数据（60s以内）进行距离估算  排除飘逸点  进行预警等
                                 # print('$GNRMC', d_list)
                                 time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
+                                # last_location = LocationInfo.objects.filter(imei_id=imei_id, time__range=(
+                                #     time + timedelta(seconds=-60), time)).last()
+                                # if last_location:
+                                #     last_speed = last_location.speed
+                                #     last_longitude = last_location.longitude
+                                #     last_latitude = last_location.latitude
+                                #     last_time = last_location.time
+                                # else:
+                                #     last_speed = 0
+                                #     last_longitude = ""
+                                #     last_latitude = ""
+                                #     last_time = time
+                                # time_diff = (time - last_time).seconds
+                                # plan_distance = time_diff * last_speed  # 估算距离
                                 longitude = d_list[5]
                                 latitude = d_list[3]
+                                # if last_longitude and last_latitude and longitude and latitude:
+                                #     distance = geodistance(last_longitude, last_latitude, longitude, latitude)  # 计算距离
+                                # else:
+                                #     distance = 0
+                                # # 误差200米
+                                # if distance > (plan_distance + 200):
+                                #     return JsonResponse({"status": "error", "error": "point drift"})
                                 speed = d_list[7]
+                                # TODO 测量中的设备预警速度
                                 direction = d_list[8]
                                 EW_hemisphere = d_list[6]
                                 NS_hemisphere = d_list[4]
@@ -1257,14 +1282,16 @@ class OneNetDataView(APIView):
                             elif 'VOL' in d_list[0] or 'CHG' in d_list[0] or 'FUL' in d_list[0]:
                                 # print('power', d_list)
                                 power = d_list[0]
-
-                        location_sers = LocationInfoSerializer(data={
-                            "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude,
-                            "latitude": latitude,
-                            "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
-                            "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
-                            "NS_hemisphere": NS_hemisphere, "power": power
-                        })
+                        try:
+                            location_sers = LocationInfoSerializer(data={
+                                "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude,
+                                "latitude": latitude,
+                                "altitude": altitude, "speed": speed, "direction": direction, "accuracy": accuracy,
+                                "satellites": satellites, "real_satellites": satellites, "EW_hemisphere": EW_hemisphere,
+                                "NS_hemisphere": NS_hemisphere, "power": power
+                            })
+                        except NameError as e:
+                            return JsonResponse({"status": "error", "error": str(e)})
                         # print(location_sers)
                         if location_sers.is_valid():
                             location_sers.save()
@@ -1477,7 +1504,8 @@ class LocationTrackView(LoginRequiredMixin, View):
                 if i.longitude and i.latitude:
                     longitude, latitude = gps_conversion(i.longitude, i.latitude)
                     location_list.append([longitude, latitude])
-                    speed_list.append([(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float(i.speed) * 0.5144444])
+                    speed_list.append(
+                        [(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float(i.speed) * 0.5144444])
 
             dict_path["path"] = location_list
             dict_path["speed"] = speed_list
@@ -2093,7 +2121,8 @@ class RecordInfoModifyView(LoginRequiredMixin, View):
         record_form = TestRecordForm(request_post, instance=record_info)
         if record_form.is_valid():
             record_form.save()
-            create_history_record(request.user, '修改测量记录 %s 的信息 为 %s ' % (record_info.remarks, request.POST.get('remarks')))
+            create_history_record(request.user,
+                                  '修改测量记录 %s 的信息 为 %s ' % (record_info.remarks, request.POST.get('remarks')))
             return JsonResponse({"status": "success"})
         return JsonResponse({
             "status": "fail"
@@ -2138,7 +2167,8 @@ class CalculateFlowTrackView(LoginRequiredMixin, View):
                 if i.longitude and i.latitude:
                     longitude, latitude = gps_conversion(i.longitude, i.latitude)
                     location_list.append([longitude, latitude])
-                    speed_list.append([(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float(i.speed) * 0.5144444])
+                    speed_list.append(
+                        [(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float(i.speed) * 0.5144444])
 
             dict_path["path"] = location_list
             dict_path["speed"] = speed_list
