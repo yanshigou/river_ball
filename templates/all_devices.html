@@ -48,8 +48,8 @@
         <div class="card shadow mb-4">
             <div class="alert" style="display: none;"></div>
             <div class="card-header py-3">
-{#                <h6 class="m-0 font-weight-bold text-primary">设备详情</h6>#}
-                {% if request.user.permission == "superadmin" %}
+                {#                <h6 class="m-0 font-weight-bold text-primary">设备详情</h6>#}
+                {% if request.user.permission == "superadmin" and request.user.username == "superadmin" %}
                     <a href="{% url 'device_add_excel' %}">
                         <button type="button" class="btn btn-sm btn-success">激活\导入设备</button>
                     </a>
@@ -81,7 +81,11 @@
                                 {% endif %}
 
                                 <td>
-                                    {% if request.user.permission == "superadmin" %}
+                                    {% if request.user.permission == "superadmin" and request.user.username == "superadmin" %}
+                                        <button type="button" class="btn btn-warning btn-sm"
+                                                onclick="return device_init({{ device.id }})" style="line-height: 1">
+                                            初始化设备
+                                        </button>
                                         <button type="button" class="btn btn-danger btn-sm"
                                                 onclick="return deviceb({{ device.id }})" style="line-height: 1">删除
                                         </button>
@@ -144,6 +148,39 @@
             }
         }
 
+        function device_init(device_id) {
+            var msg = "初始化设备将删除该设备的所有数据且会无法恢复\n\n您真的确定要初始化吗？";
+            if (confirm(msg) === true) {
+                var msg2 = "再次确认是否需要初始化（仅为设备测试完毕出厂使用）！！！";
+                if (confirm(msg2) === true) {
+                    if (device_id === undefined) {
+                        return false
+                    }
+                    $.ajax({
+                        cache: false,
+                        type: "POST",
+                        dataType: 'json',
+                        url: "{% url 'init_devices' %}",
+                        data: {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            "device_id": device_id
+                        },
+                        async: true,
+                        success: function (data) {
+                            if (data.status === 'success') {
+                                alert('初始化成功');
+                                location.reload();
+                            } else {
+                                alert(data.msg);
+                                location.reload();
+                            }
+
+                        }
+                    });
+                    return true;
+                }
+            }
+        }
     </script>
     {#    <script>#}
     {#        $(function () {#}
