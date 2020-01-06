@@ -37,7 +37,7 @@
 
         <div class="card-header py-3">
 {#            <h6 class="m-0 font-weight-bold text-primary">公司详情</h6>#}
-            {% if request.user.permission == "superadmin" or request.user.permission == "admin" %}
+            {% if request.user.permission == "superadmin" and request.user.username == "superadmin" %}
             <a href="{% url 'company_add' %}">
                 <button type="button" class="btn btn-sm btn-success">新增公司</button>
             </a>

@@ -174,7 +174,7 @@
                     <span style="font-size: 15px">用户管理</span></a>
             </li>
         {% endif %}
-        {% if request.user.permission == "superadmin" %}
+        {% if request.user.permission == "superadmin" and request.user.username == "superadmin" %}
             <hr class="sidebar-divider d-none d-md-block">
             <li {% if 'users/companyInfo' in request.path or "users/addCompany" in request.path or "users/companyDel" in request.path %}class="nav-item active table-active"
                 {% else %}class="nav-item"{% endif %}>
@@ -365,7 +365,7 @@
         <footer class="sticky-footer bg-white">
             <div class="container my-auto">
                 <div class="copyright text-center my-auto">
-                    <span>Copyright &copy; 无锡海鹰加科海洋电子有限公司 2019</span>
+                    <span>Copyright &copy; 无锡海鹰加科海洋电子有限公司 2019-2020</span>
                 </div>
             </div>
         </footer>
