@@ -28,7 +28,7 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
             all_devices = DevicesInfo.objects.all()
             for device in all_devices:
                 imei = device.imei
-                location_info = LocationInfo.objects.filter(imei__imei=imei).last()
+                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
                 status = "离线"
                 if location_info:
                     data_power = location_info.power
@@ -75,7 +75,7 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
                 all_devices = DevicesInfo.objects.filter(company__company_name="")
             for device in all_devices:
                 imei = device.imei
-                location_info = LocationInfo.objects.filter(imei__imei=imei).last()
+                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
                 status = "离线"
                 if location_info:
                     data_power = location_info.power
@@ -1227,8 +1227,18 @@ class OneNetDataView(APIView):
             value = current_data.get('value')
             up_time = current_data.get('at')
             if ds_id == 'liusuqiu':
-                re_data_list = re.findall(r"\$G[N,P]RMC[^#]*##\$G[N,P]GGA[^#]*##[^#]*##", value, re.S)
+                re_data_list = re.findall(r"\$G[N,P]RMC[^#]*##\$G[N,P]GGA[^#]*##[VCL].*##", value, re.S)
                 # print('re_data_list', re_data_list)
+                # 情况一 完整的一条ABC式数据
+                c_data_list = re.findall(r"VOL\d+", value, re.S)
+                if c_data_list:
+                    power = c_data_list[0]
+                elif "CHG" in value:
+                    power = "CHG"
+                elif "FUL" in value:
+                    power = "FUL"
+                else:
+                    power = ""
                 if re_data_list:
                     for v in re_data_list:
                         data_list = v.split('##')
@@ -1239,7 +1249,6 @@ class OneNetDataView(APIView):
                         satellites = ""
                         accuracy = ""
                         altitude = ""
-                        power = ""
                         for d in data_list:
                             d_list = d.split(',')
                             if len(d) > 10 and (d_list[0] == '$GNRMC' or d_list[0] == '$GPRMC'):
@@ -1279,9 +1288,6 @@ class OneNetDataView(APIView):
                                 satellites = d_list[7]
                                 accuracy = d_list[8]
                                 altitude = d_list[9]
-                            elif 'VOL' in d_list[0] or 'CHG' in d_list[0] or 'FUL' in d_list[0]:
-                                # print('power', d_list)
-                                power = d_list[0]
                         try:
                             location_sers = LocationInfoSerializer(data={
                                 "imei": imei_id, "time": time, "up_time": up_time, "longitude": longitude,
@@ -1299,6 +1305,76 @@ class OneNetDataView(APIView):
                             # print(location_sers.errors)
                             print('is_valid error')
                     return JsonResponse({"status": "success"})
+                # 情况二 非完整ABC式数据，正则表达式单独匹配出A B C 单独查询对应或创建
+                else:
+                    try:
+                        a_data_list = re.findall(r"\$G[NP]RMC[^#]*", value, re.S)
+                        # c_data_list = re.findall(r"VOL\d+", value, re.S)
+                        # if c_data_list:
+                        #     power = c_data_list[0]
+                        # elif "CHG" in value:
+                        #     power = "CHG"
+                        # elif "FUL" in value:
+                        #     power = "FUL"
+                        # else:
+                        #     power = ""
+                        if a_data_list:
+                            for v in a_data_list:
+                                d_list = v.split(',')
+                                time = datetime.strptime((d_list[9] + d_list[1][:6]), '%d%m%y%H%M%S')
+                                longitude = d_list[5]
+                                latitude = d_list[3]
+                                speed = d_list[7]
+                                direction = d_list[8]
+                                EW_hemisphere = d_list[6]
+                                NS_hemisphere = d_list[4]
+                                if time and longitude and latitude and speed:
+                                    location = LocationInfo.objects.filter(time=time, longitude=longitude, latitude=latitude)
+                                    if location:
+                                        location = location[0]
+                                        location.speed = speed
+                                        location.direction = direction
+                                        location.EW_hemisphere = EW_hemisphere
+                                        location.NS_hemisphere = NS_hemisphere
+                                        location.save()
+                                    else:
+                                        LocationInfo.objects.create(
+                                            imei_id=imei_id, up_time=up_time, time=time, longitude=longitude,
+                                            latitude=latitude, speed=speed, direction=direction, EW_hemisphere=EW_hemisphere,
+                                            NS_hemisphere=NS_hemisphere, power=power
+                                        )
+
+                        b_data_list = re.findall(r"\$G[NP]GGA[^#]*", value, re.S)
+                        if b_data_list:
+                            for v in b_data_list:
+                                d_list = v.split(',')
+                                date_ymd = datetime.strftime(datetime.now(), "%d%m%y")
+                                time = datetime.strptime((date_ymd + d_list[1][:6]), '%d%m%y%H%M%S')
+                                longitude = d_list[4]
+                                latitude = d_list[2]
+                                satellites = d_list[7]
+                                accuracy = d_list[8]
+                                altitude = d_list[9]
+                                if time and longitude and latitude:
+                                    location = LocationInfo.objects.filter(time=time, longitude=longitude, latitude=latitude)
+                                    if location:
+                                        location = location[0]
+                                        location.satellites = satellites
+                                        location.accuracy = accuracy
+                                        location.altitude = altitude
+                                        location.real_satellites = satellites
+                                    else:
+                                        LocationInfo.objects.create(
+                                            imei_id=imei_id, up_time=up_time, time=time, longitude=longitude,
+                                            latitude=latitude, speed="0", satellites=satellites, accuracy=accuracy,
+                                            altitude=altitude, real_satellites=satellites, power=power
+                                        )
+
+                        return JsonResponse({"status": "success"})
+                    except Exception as e:
+                        print("not like ABC error")
+                        print(e)
+                        return JsonResponse({"status": "error", "error": str(e)})
 
             return JsonResponse({"status": "fail"})
         except Exception as e:
