@@ -618,7 +618,7 @@ class ShowMap2View(LoginRequiredMixin, View):
                     "latitude": latitude,
                 })
 
-        print(devices_data)
+        # print(devices_data)
         return render(request, "map2.html", {"devices_data": devices_data})
 
     def post(self, request):
@@ -1006,7 +1006,7 @@ class DeviceInfoApiView(APIView):
             permission = user.permission
             if permission == 'superadmin':
                 device = DevicesInfo.objects.get(imei=imei)
-                location = LocationInfo.objects.filter(imei__imei=imei).last()
+                location = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
                 if location:
                     speed = location.speed
                     time = location.time
@@ -1051,7 +1051,7 @@ class DeviceInfoApiView(APIView):
             else:
                 company_id = user.company_id
                 device = DevicesInfo.objects.get(imei=imei, company_id=company_id)
-                location = LocationInfo.objects.filter(imei__imei=imei).last()
+                location = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
                 if location:
                     speed = location.speed
                     time = location.time
