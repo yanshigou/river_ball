@@ -118,7 +118,7 @@ class RecordInfoView(LoginRequiredMixin, View):
         print(permission)
         now_time = datetime.now().replace(microsecond=0)
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             all_test_record = TestRecord.objects.all().values()
             for record in all_test_record:
                 imei_id_list = (record['devices_id']).split(',')
@@ -146,7 +146,12 @@ class RecordInfoView(LoginRequiredMixin, View):
                 for record in all_test_record:
                     imei_id_list = (record['devices_id']).split(',')
                     devices = DevicesInfo.objects.filter(id__in=imei_id_list)
-                    record['devices_id'] = ",".join(i.desc for i in devices)
+                    if devices:
+                        record['devices_id'] = ",".join(i.desc for i in devices)
+                        record['company_id'] = devices[0].company.company_name
+                    else:
+                        record['devices_id'] = ""
+                        record['company_id'] = ""
             else:
                 all_test_record = ""
         return render(request, 'select2_device.html', {
@@ -161,7 +166,7 @@ class RecordAddView(LoginRequiredMixin, View):
         permission = request.user.permission
         now_time = datetime.now()
         print(permission)
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             company_id = CompanyModel.objects.all()
             all_device = DevicesInfo.objects.all()
             return render(request, 'record_form_add.html',
@@ -1227,7 +1232,7 @@ class OneNetDataView(APIView):
             value = current_data.get('value')
             up_time = current_data.get('at')
             if ds_id == 'liusuqiu':
-                re_data_list = re.findall(r"\$G[N,P]RMC[^#]*##\$G[N,P]GGA[^#]*##[VCL].*##", value, re.S)
+                re_data_list = re.findall(r"^\$G[N,P]RMC[^#]*##\$G[N,P]GGA[^#]*##[VCF].*##$", value, re.S)
                 # print('re_data_list', re_data_list)
                 # 情况一 完整的一条ABC式数据
                 c_data_list = re.findall(r"VOL\d+", value, re.S)
@@ -1363,6 +1368,7 @@ class OneNetDataView(APIView):
                                         location.accuracy = accuracy
                                         location.altitude = altitude
                                         location.real_satellites = satellites
+                                        location.save()
                                     else:
                                         LocationInfo.objects.create(
                                             imei_id=imei_id, up_time=up_time, time=time, longitude=longitude,
@@ -1601,7 +1607,7 @@ class AppStartTestRecordView(APIView):
             username = request.META.get('HTTP_USERNAME')
             user = UserProfile.objects.get(username=username)
             permission = user.permission
-            if permission == "superadmin":
+            if permission == "superadmin" and user.username == "superadmin":
                 company_id = request.data.get('company_id')
             else:
                 company_id = user.company_id
@@ -1636,7 +1642,7 @@ class AppEndTestRecordView(APIView):
             user = UserProfile.objects.get(username=username)
             permission = user.permission
             record_id = request.data.get('record_id')
-            if permission != "superadmin":
+            if permission != "superadmin" and user.username == "superadmin":
                 company_id = user.company_id
                 record_id = TestRecord.objects.get(company_id=company_id, id=record_id).id
 
