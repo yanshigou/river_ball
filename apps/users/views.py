@@ -26,7 +26,7 @@ class RegisterView2(LoginRequiredMixin, View):
             return render(request, 'register2.html', {'msg': '请先登录确认权限后再注册其他账号'})
         user = UserProfile.objects.get(username=username)
         # print(user.permission)
-        if user.permission == 'superadmin':
+        if user.permission == 'superadmin' and user.username == "superadmin":
             company_id = CompanyModel.objects.all()
             return render(request, 'register2.html', {
                 'register_form': register_form,
@@ -340,7 +340,7 @@ class UploadImageView(LoginRequiredMixin, View):
 class AllUsersView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             all_users = UserProfile.objects.all()
         else:
             compan_id = request.user.company.id
@@ -397,7 +397,7 @@ class HistoryRecordView(LoginRequiredMixin, View):
     def get(self, request):
         username = request.user.username
         permission = request.user.permission
-        if permission == "superadmin":
+        if permission == "superadmin" and username == "superadmin":
             all_users = UserProfile.objects.all()[:1500]
             return render(request, 'all_history.html', {
                 "all_users": all_users
@@ -412,7 +412,7 @@ class HistoryRecordView(LoginRequiredMixin, View):
 class AllHistoryRecordView(LoginRequiredMixin, View):
     def get(self, request, user_name):
         permission = request.user.permission
-        if permission == "superadmin":
+        if permission == "superadmin" and request.user.username == "superadmin":
             history_record = HistoryRecord.objects.filter(username_id=user_name, r_type=True).order_by('-time')[:1500]
             create_history_record(request.user, '查询 %s 的历史操作记录' % user_name)
             return render(request, 'history_record.html', {
@@ -460,7 +460,7 @@ class CompanyAddView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
         print(permission)
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
 
             return render(request, 'company_form_add.html')
         else:
@@ -495,7 +495,7 @@ class CompanyView(LoginRequiredMixin, View):
     def get(self, request):
         permission = request.user.permission
         print(permission)
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             all_company = CompanyModel.objects.all().order_by('id')
             all_admin_user = UserProfile.objects.filter(Q(permission='admin') | Q(permission='superadmin'))
             return render(request, 'company_info.html', {"all_company": all_company, "all_admin_user": all_admin_user})
@@ -507,7 +507,7 @@ class DelCompanView(LoginRequiredMixin, View):
     def post(self, request):
         permission = request.user.permission
         print(permission)
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             try:
                 company_id = request.POST.get('company_id', "")
                 dev_infos = DevicesInfo.objects.filter(company_id=company_id)
@@ -684,7 +684,7 @@ class UserInfoApiView(APIView):
             print(username)
             users = UserProfile.objects.get(username=username)
             permission = users.permission
-            if permission == 'superadmin':
+            if permission == 'superadmin' and users.username == "superadmin":
                 all_users = UserProfile.objects.all().order_by('company_id')
                 serializer = UserProfileSerializer(all_users, many=True)
             elif permission == 'admin':
@@ -725,7 +725,7 @@ class UserInfoApiView(APIView):
             user = UserProfile.objects.get(username=username)
             permission = user.permission
 
-            if permission == 'superadmin':
+            if permission == 'superadmin' and user.username == "superadmin":
                 company_id = CompanyModel.objects.get(company_name=company_name).id
                 UserProfile.objects.create_user(username=newusername, password=password, mobile=phone,
                                                 company_id=company_id, permission=perm)
@@ -768,7 +768,7 @@ class UserInfoApiView(APIView):
             if perm == 'superadmin':
                 return JsonResponse({"error_no": -2, "info": "你没有权限修改"})
 
-            if permission == 'superadmin':
+            if permission == 'superadmin' and user.username == "superadmin":
                 modify_user = UserProfile.objects.get(username=modify_username)
                 modify_user.permission = perm
                 modify_user.save()
@@ -847,7 +847,7 @@ class CompanyApiView(APIView):
             user = UserProfile.objects.get(username=username)
             permission = user.permission
             data = list()
-            if permission == 'superadmin':
+            if permission == 'superadmin' and user.username == "superadmin":
                 all_company = CompanyModel.objects.all().order_by('id')
                 for company in all_company:
                     admin_user = UserProfile.objects.filter(company=company)
