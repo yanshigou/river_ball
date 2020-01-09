@@ -1004,7 +1004,7 @@ class DeviceInfoApiView(APIView):
             data_list = list()
             user = UserProfile.objects.get(username=username)
             permission = user.permission
-            if permission == 'superadmin':
+            if permission == 'superadmin' and user.username == "superadmin":
                 device = DevicesInfo.objects.get(imei=imei)
                 location = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
                 if location:
@@ -1121,7 +1121,7 @@ class DeviceInfoApiView(APIView):
             username = request.META.get('HTTP_USERNAME')
             user = UserProfile.objects.get(username=username)
             permission = user.permission
-            if permission == "superadmin":
+            if permission == "superadmin" and user.username == "superadmin":
                 company = request.data.get('company')
                 company_id = CompanyModel.objects.get(company_name=company).id
                 request.data['company'] = company_id
@@ -1224,7 +1224,7 @@ class DeviceInfoApiView(APIView):
                     "info": "请正确填写上报频率"
                 })
 
-            if permission == "superadmin":
+            if permission == "superadmin" and user.username == "superadmin":
                 device_info = DevicesInfo.objects.get(id=device_id)
                 device_info.is_active = is_active
                 device_info.desc = desc
@@ -1303,7 +1303,7 @@ class DeviceInfoApiView(APIView):
             permission = user.permission
             device_id = request.data.get('device_id')
 
-            if permission == "superadmin":
+            if permission == "superadmin" and user.username == "superadmin":
                 device_info = DevicesInfo.objects.get(id=device_id)
                 device_info.delete()
                 create_history_record(username, '删除设备 %s，%s ' % (device_info.imei, device_info.desc))
