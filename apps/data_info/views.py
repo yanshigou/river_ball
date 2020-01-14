@@ -119,7 +119,7 @@ class RecordInfoView(LoginRequiredMixin, View):
         now_time = datetime.now().replace(microsecond=0)
         start_time = datetime.strftime(now_time, '%Y-%m-%d') + " 00:00:00"
         if permission == 'superadmin' and request.user.username == "superadmin":
-            all_test_record = TestRecord.objects.all().values()
+            all_test_record = TestRecord.objects.all().order_by('-id').values()
             for record in all_test_record:
                 imei_id_list = (record['devices_id']).split(',')
                 devices = DevicesInfo.objects.filter(id__in=imei_id_list)
@@ -142,7 +142,7 @@ class RecordInfoView(LoginRequiredMixin, View):
                     "end_time": now_time
                 })
             if company:
-                all_test_record = TestRecord.objects.filter(company__company_name=company).values()
+                all_test_record = TestRecord.objects.filter(company__company_name=company).order_by('-id').values()
                 for record in all_test_record:
                     imei_id_list = (record['devices_id']).split(',')
                     devices = DevicesInfo.objects.filter(id__in=imei_id_list)
@@ -1616,9 +1616,9 @@ class AppStartTestRecordView(APIView):
             remarks = request.data.get('remarks', '')
             wind = request.data.get('wind', '')
             warning_speed = request.data.get('warning_speed')
-            TestRecord.objects.create(start_time=start_time, devices_id=devices_id, remarks=remarks,
-                                      company_id=company_id, wind=wind, warning_speed=warning_speed)
-            create_history_record(username, '开始测量记录 %s' % TestRecord.remarks)
+            t = TestRecord.objects.create(start_time=start_time, devices_id=devices_id, remarks=remarks,
+                                          company_id=company_id, wind=wind, warning_speed=warning_speed)
+            create_history_record(username, '开始测量记录 %s' % t.remarks)
             return JsonResponse({
                 "error_no": 0
             })
@@ -1649,7 +1649,7 @@ class AppEndTestRecordView(APIView):
             record = TestRecord.objects.get(id=record_id)
             record.end_time = datetime.now()
             record.save()
-            create_history_record(username, '结束测量记录 %s' % TestRecord.remarks)
+            create_history_record(username, '结束测量记录 %s' % record.remarks)
             return JsonResponse({
                 "error_no": 0
             })
@@ -1682,7 +1682,7 @@ class TestRecordDoneView(View):
             user = UserProfile.objects.get(username=username)
             permission = user.permission
             if permission == 'superadmin':
-                all_test_record = TestRecord.objects.all()
+                all_test_record = TestRecord.objects.all().order_by('-id')
                 record_list = list()
                 if all_test_record:
                     for record in all_test_record:
@@ -1725,7 +1725,7 @@ class TestRecordDoneView(View):
                         "info": str(e)
                     })
                 if company:
-                    all_test_record = TestRecord.objects.filter(company__company_name=company)
+                    all_test_record = TestRecord.objects.filter(company__company_name=company).order_by('-id')
                     record_list = list()
                     if all_test_record:
                         for record in all_test_record:
@@ -1850,7 +1850,7 @@ class TestRecordNotDoneView(View):
             permission = user.permission
             print(permission)
             if permission == 'superadmin':
-                all_test_record = TestRecord.objects.all()
+                all_test_record = TestRecord.objects.all().order_by('-id')
                 record_list = list()
                 if all_test_record:
                     for record in all_test_record:
@@ -1893,7 +1893,7 @@ class TestRecordNotDoneView(View):
                         "info": str(e)
                     })
                 if company:
-                    all_test_record = TestRecord.objects.filter(company__company_name=company)
+                    all_test_record = TestRecord.objects.filter(company__company_name=company).order_by('-id')
                     record_list = list()
                     if all_test_record:
                         for record in all_test_record:
