@@ -40,4 +40,4 @@ class LocationOnlyInfoSerializer(serializers.ModelSerializer):
 class TestRecordForm(forms.ModelForm):
     class Meta:
         model = TestRecord
-        fields = ["remarks", "start_time", "end_time", "devices_id", "company"]
+        fields = ["remarks", "start_time", "end_time", "devices_id", "company", "warning_speed"]

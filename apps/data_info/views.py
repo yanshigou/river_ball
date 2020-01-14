@@ -3,9 +3,10 @@ from django.shortcuts import render
 from django.views import View
 from myutils.mixin_utils import LoginRequiredMixin
 from datetime import timedelta
-from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active, geodistance
+from myutils.utils import create_history_record, gps_conversion, export_excel, device_is_active, geodistance, \
+    make_message, jpush_function_extra
 from .models import LocationInfo, DevicesOneNetInfo, TestRecord
-from users.models import UserProfile, CompanyModel
+from users.models import UserProfile, CompanyModel, Message
 from devices.models import DevicesInfo
 from django.http import JsonResponse, HttpResponseRedirect
 from .forms import LocationInfoSerializer, DevicesInfoSerializer, TestRecordForm
@@ -28,7 +29,8 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
             all_devices = DevicesInfo.objects.all()
             for device in all_devices:
                 imei = device.imei
-                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
+                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(
+                    Q(power__isnull=True) | Q(power="")).last()
                 status = "离线"
                 if location_info:
                     data_power = location_info.power
@@ -75,7 +77,8 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
                 all_devices = DevicesInfo.objects.filter(company__company_name="")
             for device in all_devices:
                 imei = device.imei
-                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(Q(power__isnull=True) | Q(power="")).last()
+                location_info = LocationInfo.objects.filter(imei__imei=imei).exclude(
+                    Q(power__isnull=True) | Q(power="")).last()
                 status = "离线"
                 if location_info:
                     data_power = location_info.power
@@ -1222,6 +1225,8 @@ class OneNetDataView(APIView):
             one_net = DevicesOneNetInfo.objects.filter(dev_id=dev_id)
             if one_net:
                 imei_id = one_net[0].imei.id
+                imei = one_net[0].imei.imei
+                desc = one_net[0].imei.desc
                 if not device_is_active(imei_id):
                     return JsonResponse({"status": "error", "error": 'device is_active False'})
 
@@ -1284,7 +1289,6 @@ class OneNetDataView(APIView):
                                 # if distance > (plan_distance + 200):
                                 #     return JsonResponse({"status": "error", "error": "point drift"})
                                 speed = d_list[7]
-                                # TODO 测量中的设备预警速度
                                 direction = d_list[8]
                                 EW_hemisphere = d_list[6]
                                 NS_hemisphere = d_list[4]
@@ -1306,9 +1310,40 @@ class OneNetDataView(APIView):
                         # print(location_sers)
                         if location_sers.is_valid():
                             location_sers.save()
+                            # TODO 测量中的设备预警速度
+                            test_record = TestRecord.objects.filter(
+                                end_time__isnull=True).filter(
+                                devices_id__contains=imei_id).exclude(
+                                Q(warning_speed="") | Q(warning_speed__isnull=True))
+                            for r in test_record:
+                                company_id = r.company.id
+                                warning_speed = r.warning_speed
+                                speed_m_s = float('%0.2f' % (float(speed) * 0.5144444))
+                                if warning_speed and speed_m_s > float(warning_speed) != 0:
+                                    user_list = UserProfile.objects.filter(company_id=company_id)
+                                    real_time = time + timedelta(hours=8)
+                                    for u in user_list:
+                                        username = u.username
+                                        message_info = Message.objects.filter(
+                                            username=username, m_type=-1, content__contains=imei,
+                                            time__range=(real_time + timedelta(minutes=-5), real_time), has_read=False)
+                                        # print(message_info)
+                                        if not message_info:
+                                            make_message(username, "请注意 【%s：%s】 当前速度已超过预警速度！时间【%s】，速度为【%s m/s】" %
+                                                         (imei, desc, datetime.strftime(real_time, "%Y-%m-%d %H:%M:%S"),
+                                                          str(speed_m_s)), -1)
+                                            res = jpush_function_extra(
+                                                username, "1", "【%s：%s】当前速度已超过预警速度！" % (imei, desc),
+                                                               "请注意 【%s：%s】 当前速度已超过预警速度！时间【%s】，速度为【%s m/s】" %
+                                                               (imei, desc,
+                                                                datetime.strftime(real_time, "%Y-%m-%d %H:%M:%S"),
+                                                                str(speed_m_s)))
+                                            # print(res.json())
+                            #  TODO 测量中的设备预警速度 END
                         else:
                             # print(location_sers.errors)
-                            print('is_valid error')
+                            # print('is_valid error')
+                            pass
                     return JsonResponse({"status": "success"})
                 # 情况二 非完整ABC式数据，正则表达式单独匹配出A B C 单独查询对应或创建
                 else:
@@ -1334,7 +1369,8 @@ class OneNetDataView(APIView):
                                 EW_hemisphere = d_list[6]
                                 NS_hemisphere = d_list[4]
                                 if time and longitude and latitude and speed:
-                                    location = LocationInfo.objects.filter(time=time, longitude=longitude, latitude=latitude)
+                                    location = LocationInfo.objects.filter(imei_id=imei_id, time=time,
+                                                                           longitude=longitude, latitude=latitude)
                                     if location:
                                         location = location[0]
                                         location.speed = speed
@@ -1345,9 +1381,43 @@ class OneNetDataView(APIView):
                                     else:
                                         LocationInfo.objects.create(
                                             imei_id=imei_id, up_time=up_time, time=time, longitude=longitude,
-                                            latitude=latitude, speed=speed, direction=direction, EW_hemisphere=EW_hemisphere,
+                                            latitude=latitude, speed=speed, direction=direction,
+                                            EW_hemisphere=EW_hemisphere,
                                             NS_hemisphere=NS_hemisphere, power=power
                                         )
+                                    # TODO 测量中的设备预警速度
+                                    test_record = TestRecord.objects.filter(
+                                        end_time__isnull=True).filter(
+                                        devices_id__contains=imei_id).exclude(
+                                        Q(warning_speed="") | Q(warning_speed__isnull=True))
+                                    for r in test_record:
+                                        company_id = r.company.id
+                                        warning_speed = r.warning_speed
+                                        speed_m_s = float('%0.2f' % (float(speed) * 0.5144444))
+                                        if warning_speed and speed_m_s > float(warning_speed) != 0:
+                                            user_list = UserProfile.objects.filter(company_id=company_id)
+                                            real_time = time + timedelta(hours=8)
+                                            for u in user_list:
+                                                username = u.username
+                                                message_info = Message.objects.filter(
+                                                    username=username, m_type=-1, content__contains=imei,
+                                                    time__range=(real_time + timedelta(minutes=-5), real_time),
+                                                    has_read=False)
+                                                # print(message_info)
+                                                if not message_info:
+                                                    make_message(
+                                                        username, "请注意 【%s：%s】 当前速度已超过预警速度！时间【%s】，速度为【%s m/s】" %
+                                                                  (imei, desc,
+                                                                   datetime.strftime(real_time, "%Y-%m-%d %H:%M:%S"),
+                                                                   str(speed_m_s)), -1)
+                                                    res = jpush_function_extra(
+                                                        username, "1", "【%s：%s】当前速度已超过预警速度！" % (imei, desc),
+                                                                       "请注意 【%s：%s】 当前速度已超过预警速度！时间【%s】，速度为【%s m/s】" %
+                                                                       (imei, desc, datetime.strftime(real_time,
+                                                                                                      "%Y-%m-%d %H:%M:%S"),
+                                                                        str(speed_m_s)))
+                                                    # print(res.json())
+                                    #  TODO 测量中的设备预警速度 END
 
                         b_data_list = re.findall(r"\$G[NP]GGA[^#]*", value, re.S)
                         if b_data_list:
@@ -1361,7 +1431,8 @@ class OneNetDataView(APIView):
                                 accuracy = d_list[8]
                                 altitude = d_list[9]
                                 if time and longitude and latitude:
-                                    location = LocationInfo.objects.filter(time=time, longitude=longitude, latitude=latitude)
+                                    location = LocationInfo.objects.filter(imei_id=imei_id, time=time,
+                                                                           longitude=longitude, latitude=latitude)
                                     if location:
                                         location = location[0]
                                         location.satellites = satellites
@@ -1375,7 +1446,6 @@ class OneNetDataView(APIView):
                                             latitude=latitude, speed="0", satellites=satellites, accuracy=accuracy,
                                             altitude=altitude, real_satellites=satellites, power=power
                                         )
-
                         return JsonResponse({"status": "success"})
                     except Exception as e:
                         print("not like ABC error")
