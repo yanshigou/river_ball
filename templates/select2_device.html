@@ -107,7 +107,7 @@
                             <th>开始时间</th>
                             <th>结束时间</th>
 {#                            <th>风速</th>#}
-{#                            <th>预警速度 m/s</th>#}
+                            <th>预警速度 m/s</th>
                             {% if request.user.permission == "superadmin" %}
                                 <th>所属公司</th>
                             {% endif %}
@@ -138,7 +138,7 @@
                                 <td>{{ record.start_time }}</td>
                                 <td>{{ record.end_time|default_if_none:"正在测量" }}</td>
 {#                                <td>{{ record.wind|default_if_none:"" }}</td>#}
-{#                                <td>{{ record.warning_speed|default_if_none:"" }}</td>#}
+                                <td>{{ record.warning_speed|default_if_none:"" }}</td>
                                 {% if request.user.permission == "superadmin" %}
                                     <td>{{ record.company_id }}</td>
                                 {% endif %}
