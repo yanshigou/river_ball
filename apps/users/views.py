@@ -424,7 +424,7 @@ class AllHistoryRecordView(LoginRequiredMixin, View):
 class MessageView(View):
 
     def get(self, request):
-        all_message = Message.objects.filter(username_id=request.user.username)
+        all_message = Message.objects.filter(username_id=request.user.username).order_by('-id')
         return render(request, 'message.html', {
             "all_message": all_message
         })
@@ -980,7 +980,7 @@ class MessageApiView(APIView):
     def get(self, request):
         try:
             username = request.META.get("HTTP_USERNAME")
-            all_message = Message.objects.filter(username__username=username)
+            all_message = Message.objects.filter(username__username=username).order_by('-id')
             message_ser = MessageSerializer(all_message, many=True)
 
             return JsonResponse({
