@@ -5,6 +5,7 @@ import requests
 import json
 import base64
 from datetime import timedelta
+import xlrd
 
 
 def test():
@@ -104,7 +105,7 @@ def time_difference(location_infos, n):
         return timedelta(seconds=0)
     # if (location_infos[n].time - location_infos[n-1].time).seconds > 6:
     #     print(location_infos[n].time, location_infos[n-1].time)
-    return location_infos[n].time - location_infos[n-1].time
+    return location_infos[n].time - location_infos[n - 1].time
 
 
 def send_freq(device_id, freq):
@@ -118,11 +119,38 @@ def send_freq(device_id, freq):
     return res
 
 
+def excel_test():
+    src = "C:\\Users\\Administrator\\Desktop\\liusuqiu2020-01-13 13_40_002020-01-14 00_00_00.xlsx"  # 连接成上传文件的路径
+    rb = xlrd.open_workbook(filename=src)  # 打开文件
+    sheet1 = rb.sheet_by_index(0)  # 通过索引获取第一张表格
+    cols = sheet1.col_values(0)  # 获取列内容 list
+    headers = {"Content-Type": "application/json"}
+    for i in range(1, len(cols)):
+        try:
+            rows = sheet1.row_values(i)  # 获取行内容 list
+            value = rows[1]
+            up_time = rows[0]
+            data = {
+                "current_data": [{
+                    "ds_id": "liusuqiu",
+                    "value": value,
+                    "at": up_time,
+                    "dev_id": "580231950"
+                }]
+            }
+            # print(data)
+            res = requests.post('http://106.54.217.74/dataInfo/rawData/', data=json.dumps(data), headers=headers)
+            print(res.json())
+
+        except Exception as e:
+            print(e)
+
+
 if __name__ == '__main__':
     # res = jpush_function_extra("13883562563", "1", "预警速度测试", "预警速度测试内容")
     # print(res)
     # print(res.json())
     # print(gps_conversion("12016.31454", "3133.93492"))
-    res = send_freq("545240679", 10)
-    print(res.json())
-
+    # res = send_freq("545240679", 10)
+    # print(res.json())
+    excel_test()
