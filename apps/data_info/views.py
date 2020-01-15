@@ -25,7 +25,7 @@ class DeviceDataInfoView(LoginRequiredMixin, View):
         permission = request.user.permission
         print(permission)
         data_list = list()
-        if permission == 'superadmin':
+        if permission == 'superadmin' and request.user.username == "superadmin":
             all_devices = DevicesInfo.objects.all()
             for device in all_devices:
                 imei = device.imei
@@ -684,7 +684,7 @@ class RecordLocationPaginatorView(LoginRequiredMixin, View):
         devlist = DevicesInfoSerializer(devs, many=True)
         # print(a)
         return render(request, 'record_location_paginator.html', {
-            "start_time": start_time,
+            "start_time": datetime.strftime(start_time, "%Y-%m-%d"),
             "end_time": end_time,
             "desc_list": devlist.data,
             "record_id": record_id
@@ -813,8 +813,8 @@ class RecordLocationDistanceView(APIView):
                         if not last_time:
                             last_time = location_infos[len(location_infos) - 1].time
                         average_speed = total_nums / (last_time - first_time).seconds
-                        first_time = datetime.strftime(first_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
-                        last_time = datetime.strftime(last_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
+                        first_time = datetime.strftime(first_time + timedelta(hours=8), "%H:%M:%S")
+                        last_time = datetime.strftime(last_time + timedelta(hours=8), "%H:%M:%S")
                         max_speed = max(speed_list)
                         min_speed = min(speed_list)
 
