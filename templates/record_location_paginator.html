@@ -34,16 +34,41 @@
         </ol>
         <!-- Page Heading -->
         <!-- DataTales Example -->
-        <p>测量时间：{{ start_time }} 至 {{ end_time }}</p>
+        <table border="2">
+            <tr>
+                <td>&nbsp;名称&nbsp;</td>
+                <td>&nbsp;测量日期&nbsp;</td>
+                <td>&nbsp;起止时间&nbsp;</td>
+                <td>&nbsp;间隔历时(s)&nbsp;</td>
+                <td>&nbsp;所流距离(m)&nbsp;</td>
+                <td>&nbsp;最大流速(m/s)&nbsp;</td>
+                <td>&nbsp;最小流速(m/s)&nbsp;</td>
+                <td>&nbsp;平均流速(m/s)&nbsp;</td>
+            </tr>
+            {% for desc in desc_list %}
+            <tr>
+                <td>&nbsp;{{ desc.desc }}&nbsp;</td>
+                <td>&nbsp;{{ start_time }} 至 {{ end_time }}&nbsp;</td>
+                <td>&nbsp;<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a><a id="last_time{{ desc.id }}"></a>&nbsp;</td>
+                <td>&nbsp;<a id="time_diff{{ desc.id }}">0</a> s&nbsp;</td>
+                <td>&nbsp;<a id="total_nums{{ desc.id }}">0</a> m (<a id="total_nums2{{ desc.id }}">0</a> km)&nbsp;</td>
+                <td>&nbsp;<a id="max_speed{{ desc.id }}">0</a> m/s&nbsp;</td>
+                <td>&nbsp;<a id="min_speed{{ desc.id }}">0</a> m/s&nbsp;</td>
+                <td>&nbsp;<a id="average_speed{{ desc.id }}">0</a> m/s&nbsp;</td>
+            </tr>
+
+            {% endfor %}
+        </table>
+{#        <p>测量时间：{{ start_time }} 至 {{ end_time }}</p>#}
         {% for desc in desc_list %}
-            <p>
-            <h6>{{ desc.desc }}:</h6>
-            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮历时：<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a>
-            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}">
-            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮距离：<a id="total_nums{{ desc.id }}">0</a> m
-            (<a id="total_nums2{{ desc.id }}">0</a> km) <br>
-            &nbsp;&nbsp;&nbsp;&nbsp;平均流速： <a id="average_speed{{ desc.id }}">0</a> m/s <br>
-            </p>
+{#            <p>#}
+{#            <h6>{{ desc.desc }}:</h6>#}
+{#            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮历时：<a id="first_time{{ desc.id }}"></a><a id="zhi{{ desc.id }}"></a>#}
+{#            <a id="last_time{{ desc.id }}"></a> <br id="br{{ desc.id }}">#}
+{#            &nbsp;&nbsp;&nbsp;&nbsp;总漂浮距离：<a id="total_nums{{ desc.id }}">0</a> m#}
+{#            (<a id="total_nums2{{ desc.id }}">0</a> km) <br>#}
+{#            &nbsp;&nbsp;&nbsp;&nbsp;平均流速： <a id="average_speed{{ desc.id }}">0</a> m/s <br>#}
+{#            </p>#}
             <p style="display: none" id="max_list{{ desc.id }}">
 
             </p>
@@ -111,8 +136,12 @@
                     if (data.status === 'success') {
                         $.each(data.data_list, function (i, value) {
                             var device_id = value.device_id;
+                            var desc = value.desc;
                             var total_nums = "#total_nums" + device_id;
                             var total_nums2 = "#total_nums2" + device_id;
+                            var max_speed = "#max_speed" + device_id;
+                            var min_speed = "#min_speed" + device_id;
+                            var time_diff = "#time_diff" + device_id;
                             var average_speed = "#average_speed" + device_id;
                             var first_time = "#first_time" + device_id;
                             var last_time = "#last_time" + device_id;
@@ -140,7 +169,10 @@
                                         url += "/dataInfo/pointMapShow/?lon=" + value.max_speed_lon + "&lat=" + value.max_speed_lat + "&speed=" + value.max_speed + "&time=" + value.max_speed_time;
                                         {#console.log(url);#}
                                     }
-                                    p_max_list.append('瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：<strong><a style="font-size: 22px">' + value.max_speed + ' m/s </a></strong>&nbsp;');
+                                    $(max_speed).html(value.max_speed);
+                                    $(min_speed).html(value.min_speed);
+                                    $(time_diff).html(value.time_diff);
+                                    p_max_list.append(desc + '：瞬时最大流速在：' + value.max_speed_time + '&nbsp; 瞬时最大流速：<strong><a style="font-size: 22px">' + value.max_speed + ' m/s </a></strong>&nbsp;');
                                     p_max_list.append('<a href="' +
                                         url + '" target="view_window" style="font-size: 18px">' + "<i class=\"fa fa-map-marker\">&nbsp;( " + value.max_speed_lon + ", " + value.max_speed_lat + " )</i>" + '</a>' + '<br>');
                                     p_max_list.show();

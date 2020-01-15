@@ -712,7 +712,7 @@ class RecordLocationPaginatorView(LoginRequiredMixin, View):
             data_info_locationinfo where imei_id in(" + device_list_str + ") \
             and time >='" + (start_time - delta).strftime("%Y%m%d%H%M%S") + "'  \
             and time <='" + (end_time - delta).strftime("%Y%m%d%H%M%S") + "'    \
-            group by time order by time;"
+            group by time order by time desc;"
         # print(sql)
         with connection.cursor() as cursor:
             cursor.execute(sql)
@@ -786,6 +786,7 @@ class RecordLocationDistanceView(APIView):
                 last_time = None
                 speed_list = list()
                 max_list = list()
+                time_diff = 0
                 if location_infos:
                     try:
                         for i in range(len_location_infos):
@@ -815,6 +816,7 @@ class RecordLocationDistanceView(APIView):
                         first_time = datetime.strftime(first_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                         last_time = datetime.strftime(last_time + timedelta(hours=8), "%Y-%m-%d %H:%M:%S")
                         max_speed = max(speed_list)
+                        min_speed = min(speed_list)
 
                         max_speed_index = speed_list.index(max_speed)
                         max_speed_lon, max_speed_lat = gps_conversion(location_infos[max_speed_index].longitude,
@@ -823,8 +825,8 @@ class RecordLocationDistanceView(APIView):
                                                            "%Y-%m-%d %H:%M:%S")
                         # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
                         max_list.append({
-                            "max_speed": max_speed, "max_speed_time": max_speed_time,
-                            "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                            "max_speed": max_speed, "max_speed_time": max_speed_time, "time_diff": time_diff,
+                            "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat, "min_speed": min_speed
                         })
                         while True:
                             speed_list[max_speed_index] = 0
@@ -837,8 +839,9 @@ class RecordLocationDistanceView(APIView):
                                     "%Y-%m-%d %H:%M:%S")
                                 # print(max_speed, max_speed_index, max_speed_time, max_speed_lon, max_speed_lat)
                                 max_list.append({
-                                    "max_speed": max_speed, "max_speed_time": max_speed_time,
-                                    "max_speed_lon": max_speed_lon, "max_speed_lat": max_speed_lat
+                                    "max_speed": max_speed, "max_speed_time": max_speed_time, "max_speed_lon":
+                                        max_speed_lon, "max_speed_lat": max_speed_lat, "min_speed": min_speed,
+                                    "time_diff": time_diff
                                 })
                             else:
                                 break
