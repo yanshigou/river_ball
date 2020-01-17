@@ -274,7 +274,7 @@ class ResetPasswordView(View):
         userinfo.save()
         make_message(userinfo.username, "已重置密码，请立即修改密码！", -1)
         res = jpush_function_extra(userinfo.username, "2", "已重置密码，请立即修改密码！", "已重置密码，密码过于简单，建议立即修改密码！")
-        print(res.json())
+        # print(res.json())
         return JsonResponse({
             "status": "success",
             "msg": "重置密码成功"
