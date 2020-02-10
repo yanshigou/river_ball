@@ -62,6 +62,8 @@
         // 创建一个自定义内容的 infowindow 实例
         //console.log(time);
         //console.log(speed);
+        //console.log(typeof speed);
+        speed = speed.toFixed(2);
         var infoWindowContent = "断面流量计算：<br><p id='infoWindow'>坐标点：" + lng.slice(0,12) + ", " + lat.slice(0,11) + "<br><br>时间：" + time + "<br><br>中泓浮标系数：<input type=\"text\" value=\"0.85\" id='zhfbxs'><br><br>过水面积：<input type=\"text\" id='gsmj'> m<sup>2</sup><br><br>流速：<input type=\"text\" value=\"" + speed + "\" id='speed'> m/s<br><br><a id='dmll'></a></p><button onclick=\"calculateFlowValue()\" >计算</button>";
         var infoWindow = new AMap.InfoWindow({
             position: [lng, lat],
