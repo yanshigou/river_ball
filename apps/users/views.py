@@ -339,17 +339,24 @@ class UploadImageView(LoginRequiredMixin, View):
 
 class AllUsersView(LoginRequiredMixin, View):
     def get(self, request):
-        permission = request.user.permission
-        if permission == 'superadmin' and request.user.username == "superadmin":
-            all_users = UserProfile.objects.all()
-        else:
-            compan_id = request.user.company.id
-            print(compan_id)
-            all_users = UserProfile.objects.filter(company_id=compan_id)
-        create_history_record(request.user, '查询所有用户信息')
-        return render(request, 'all_users.html', {
-            "all_users": all_users
-        })
+        try:
+            permission = request.user.permission
+            if permission == 'superadmin' and request.user.username == "superadmin":
+                all_users = UserProfile.objects.all()
+            else:
+                compan_id = request.user.company.id
+                print(compan_id)
+                all_users = UserProfile.objects.filter(company_id=compan_id)
+            create_history_record(request.user, '查询所有用户信息')
+            return render(request, 'all_users.html', {
+                "all_users": all_users
+            })
+        except Exception as e:
+            print(e)
+            all_users = UserProfile.objects.filter(username=request.user.username)
+            return render(request, 'all_users.html', {
+                "all_users": all_users
+            })
 
 
 class DelUserView(LoginRequiredMixin, View):
