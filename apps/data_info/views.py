@@ -1660,7 +1660,7 @@ class LocationTrackView(LoginRequiredMixin, View):
                     longitude, latitude = gps_conversion(i.longitude, i.latitude)
                     location_list.append([longitude, latitude])
                     speed_list.append(
-                        [(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float(i.speed) * 0.5144444])
+                        [(i.time + timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S"), float('%0.2f' % (float(i.speed) * 0.5144444))])
 
             dict_path["path"] = location_list
             dict_path["speed"] = speed_list
